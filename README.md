@@ -126,9 +126,23 @@ Email: admin@bda.com
 Password: password123
 ```
 
-## 📸 Screenshots
+## 📸 Application Walkthrough
 
-> Add screenshots of Dashboard, Lead Management, and AI Email Drafter here.
+### 📊 Executive Analytics Dashboard
+A comprehensive view of the sales pipeline, team performance, lead distributions, and real-time activity logs.
+![Executive Analytics Dashboard](screenshots/analytics_dashboard.png)
+
+### 📋 Kanban Task Management
+Visual task allocation and tracking across customizable stages (To Do, In Progress, Review, Done) with priority indicators.
+![Kanban Task Management](screenshots/kanban_tasks.png)
+
+### 👥 Team Target Coordination
+Enables administrators and managers to monitor regional sales targets, track achievement percentages, and configure member structures.
+![Team Target Coordination](screenshots/team_management.png)
+
+### 👤 User Profile & Workspace Details
+Allows team members to manage contact information, check department scopes, and view individual sales targets.
+![User Profile](screenshots/user_profile.png)
 
 ## 📄 License
 This project is for educational purposes.
