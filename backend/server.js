@@ -12,16 +12,28 @@ dotenv.config();
 const app = express();
 
 // Standard Middlewares
+// 1. Define your allowed development origins
+const localOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+// 2. Define a regex pattern to match any Vercel deployment for this project
+const vercelOriginRegex = /^https:\/\/bda-team-management.*\.vercel\.app$/;
+
 app.use(cors({
-  origin: 'https://bda-team-management.vercel.app', // Allow all origins for testing/development
+  origin: function (origin, callback) {
+    // Check if the incoming request origin matches local dev or your Vercel setup
+    if (!origin || localOrigins.includes(origin) || vercelOriginRegex.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Blocked by CORS matching policy'));
+    }
+  },
   credentials: true
 }));
+
 app.use(express.json());
 
 if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
   app.use(morgan('dev'));
 }
-
 // Import Route files
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
