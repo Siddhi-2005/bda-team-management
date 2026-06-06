@@ -13,7 +13,7 @@ const app = express();
 
 // Standard Middlewares
 app.use(cors({
-  origin: '*', // Allow all origins for testing/development
+  origin: 'https://bda-team-management.vercel.app', // Allow all origins for testing/development
   credentials: true
 }));
 app.use(express.json());
