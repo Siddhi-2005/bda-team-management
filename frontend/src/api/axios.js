@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: https://bda-team-management.onrender.com
+  baseURL: 'https://bda-team-management.onrender.com',
   headers: {
     'Content-Type': 'application/json'
   }
