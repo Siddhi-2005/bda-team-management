@@ -83,7 +83,7 @@ const Login = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            marginBottom: '12px',
+            marginBottom: '4px',
           }}>
             <RiSparklingLine style={{ color: '#f5a623', fontSize: '1.1rem' }} />
             <span style={{
@@ -93,9 +93,18 @@ const Login = () => {
               letterSpacing: '0.05em',
               color: 'var(--text-secondary)',
             }}>
-              Live Demo — Click a role to auto-fill
+              Portfolio Demo
             </span>
           </div>
+          <p style={{
+            margin: '0 0 12px 0',
+            fontSize: '0.75rem',
+            color: 'var(--text-secondary)',
+            opacity: 0.7,
+            lineHeight: '1.4',
+          }}>
+            This is a portfolio project by Siddhi. Click a role below to explore the app with pre-configured demo credentials.
+          </p>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             {DEMO_ACCOUNTS.map((account) => {
