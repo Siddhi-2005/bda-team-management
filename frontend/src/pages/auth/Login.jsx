@@ -42,6 +42,18 @@ const Login = () => {
           <p>Login to manage teams, track potential customers, and view analytics.</p>
         </div>
 
+        <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.9rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <p style={{ margin: '0 0 10px 0', color: 'var(--text-secondary)', fontWeight: 'bold' }}>For Recruiters (Demo Accounts):</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', color: 'var(--text-primary)' }}>
+            <span><strong>Admin:</strong> admin@test.com</span>
+            <span><strong>Pass:</strong> password123</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-primary)' }}>
+            <span><strong>Manager:</strong> manager@test.com</span>
+            <span><strong>Pass:</strong> password123</span>
+          </div>
+        </div>
+
         {err && <div className="alert alert-danger">{err}</div>}
 
         <form onSubmit={handleSubmit}>
