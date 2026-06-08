@@ -24,6 +24,8 @@ const Members = () => {
   const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('Business Development');
   const [isActive, setIsActive] = useState(true);
+  const [teams, setTeams] = useState([]);
+  const [team, setTeam] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -48,6 +50,17 @@ const Members = () => {
     }
   };
 
+  const fetchTeams = async () => {
+    try {
+      const res = await api.get('/teams');
+      if (res.data.success) {
+        setTeams(res.data.teams);
+      }
+    } catch (err) {
+      console.error('Failed fetching teams', err);
+    }
+  };
+
   useEffect(() => {
     // Debounce search a bit
     const delayDebounceFn = setTimeout(() => {
@@ -57,6 +70,10 @@ const Members = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [search, roleFilter, statusFilter]);
 
+  useEffect(() => {
+    fetchTeams();
+  }, []);
+
   const openAddModal = () => {
     setEditingMember(null);
     setName('');
@@ -65,6 +82,7 @@ const Members = () => {
     setRole('bda');
     setPhone('');
     setDepartment('Business Development');
+    setTeam('');
     setIsActive(true);
     setError('');
     setModalOpen(true);
@@ -78,6 +96,7 @@ const Members = () => {
     setRole(member.role);
     setPhone(member.phone || '');
     setDepartment(member.department || 'Business Development');
+    setTeam(member.team?._id || member.team || '');
     setIsActive(member.isActive);
     setError('');
     setModalOpen(true);
@@ -93,19 +112,28 @@ const Members = () => {
       setSaving(true);
       setError('');
       
-      const payload = { name, email, role, phone, department, isActive };
+      const payload = { 
+        name, 
+        email, 
+        role, 
+        phone, 
+        department, 
+        isActive,
+        team: role === 'bda' ? team || undefined : undefined
+      };
+      
       if (!editingMember) {
         if (!password) return setError('Password is required for new users.');
         payload.password = password;
         const res = await api.post('/users', payload);
         if (res.data.success) {
-          setMembers([res.data.user, ...members]);
+          fetchMembers();
           setModalOpen(false);
         }
       } else {
         const res = await api.put(`/users/${editingMember._id}`, payload);
         if (res.data.success) {
-          setMembers(members.map((m) => (m._id === editingMember._id ? res.data.user : m)));
+          fetchMembers();
           setModalOpen(false);
         }
       }
@@ -325,6 +353,24 @@ const Members = () => {
               </div>
             </div>
           </div>
+
+          {role === 'bda' && (
+            <div className="form-group" style={{ marginTop: '15px' }}>
+              <label>Sales Team Assignment</label>
+              <select 
+                className="form-control" 
+                value={team} 
+                onChange={(e) => setTeam(e.target.value)}
+              >
+                <option value="">No Team Assigned</option>
+                {teams.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name} ({t.region} Market)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '25px' }}>
             <button type="button" onClick={() => setModalOpen(false)} className="btn btn-secondary">
