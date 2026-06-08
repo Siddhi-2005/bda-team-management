@@ -1,16 +1,45 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { RiMailLine, RiLockLine, RiArrowRightLine, RiLoader4Line } from 'react-icons/ri';
+import { RiMailLine, RiLockLine, RiArrowRightLine, RiLoader4Line, RiShieldCheckLine, RiTeamLine, RiSparklingLine } from 'react-icons/ri';
+
+const DEMO_ACCOUNTS = [
+  {
+    role: 'Admin',
+    email: 'admin@test.com',
+    password: 'password123',
+    icon: RiShieldCheckLine,
+    description: 'Full system access, analytics & team management',
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    border: 'rgba(102, 126, 234, 0.4)',
+  },
+  {
+    role: 'Manager',
+    email: 'manager@test.com',
+    password: 'password123',
+    icon: RiTeamLine,
+    description: 'Team oversight, lead assignments & reports',
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    border: 'rgba(240, 147, 251, 0.4)',
+  },
+];
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const [activeDemo, setActiveDemo] = useState(null);
   
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const handleDemoClick = (account) => {
+    setEmail(account.email);
+    setPassword(account.password);
+    setActiveDemo(account.role);
+    setErr('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,15 +71,93 @@ const Login = () => {
           <p>Login to manage teams, track potential customers, and view analytics.</p>
         </div>
 
-        <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.9rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <p style={{ margin: '0 0 10px 0', color: 'var(--text-secondary)', fontWeight: 'bold' }}>For Recruiters (Demo Accounts):</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', color: 'var(--text-primary)' }}>
-            <span><strong>Admin:</strong> admin@test.com</span>
-            <span><strong>Pass:</strong> password123</span>
+        {/* Demo Credentials Section */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(240, 147, 251, 0.08) 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '12px',
+          padding: '16px',
+          marginBottom: '24px',
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '12px',
+          }}>
+            <RiSparklingLine style={{ color: '#f5a623', fontSize: '1.1rem' }} />
+            <span style={{
+              fontSize: '0.8rem',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: 'var(--text-secondary)',
+            }}>
+              Live Demo — Click a role to auto-fill
+            </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-primary)' }}>
-            <span><strong>Manager:</strong> manager@test.com</span>
-            <span><strong>Pass:</strong> password123</span>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {DEMO_ACCOUNTS.map((account) => {
+              const Icon = account.icon;
+              const isActive = activeDemo === account.role;
+              return (
+                <button
+                  key={account.role}
+                  type="button"
+                  onClick={() => handleDemoClick(account)}
+                  style={{
+                    flex: 1,
+                    background: isActive
+                      ? account.gradient
+                      : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${isActive ? account.border : 'rgba(255, 255, 255, 0.08)'}`,
+                    borderRadius: '10px',
+                    padding: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    textAlign: 'left',
+                    transform: isActive ? 'scale(1.02)' : 'scale(1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.border = `1px solid ${account.border}`;
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)';
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <Icon style={{
+                      fontSize: '1.2rem',
+                      color: isActive ? '#fff' : account.border.replace('0.4', '1'),
+                    }} />
+                    <span style={{
+                      fontWeight: '700',
+                      fontSize: '0.9rem',
+                      color: isActive ? '#fff' : 'var(--text-primary)',
+                    }}>
+                      {account.role}
+                    </span>
+                  </div>
+                  <p style={{
+                    margin: 0,
+                    fontSize: '0.72rem',
+                    color: isActive ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)',
+                    lineHeight: '1.3',
+                  }}>
+                    {account.description}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -70,12 +177,13 @@ const Login = () => {
                 }} 
               />
               <input
+                id="login-email"
                 type="email"
                 placeholder="email@example.com"
                 className="form-control"
                 style={{ paddingLeft: '45px' }}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setActiveDemo(null); }}
                 required
               />
             </div>
@@ -94,12 +202,13 @@ const Login = () => {
                 }} 
               />
               <input
+                id="login-password"
                 type="password"
                 placeholder="••••••••"
                 className="form-control"
                 style={{ paddingLeft: '45px' }}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setActiveDemo(null); }}
                 required
               />
             </div>
@@ -108,6 +217,7 @@ const Login = () => {
           <button 
             type="submit" 
             className="btn btn-primary" 
+            id="login-submit"
             style={{ width: '100%', marginTop: '10px', height: '48px' }}
             disabled={loading}
           >
