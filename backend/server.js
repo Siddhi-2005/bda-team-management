@@ -15,7 +15,7 @@ const app = express();
 // 1. Define your allowed development origins
 const localOrigins = ['http://localhost:5173', 'http://localhost:3000'];
 // 2. Define a regex pattern to match any Vercel deployment for this project
-const vercelOriginRegex = /^https:\/\/bda-team-management.*\.vercel\.app$/;
+const vercelOriginRegex = /^https:\/\/.*\.vercel\.app$/;
 
 app.use(cors({
   origin: function (origin, callback) {

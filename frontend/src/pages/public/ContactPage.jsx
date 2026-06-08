@@ -18,7 +18,7 @@ const ContactPage = () => {
       setLoading(true);
       setErr('');
       // Send the data through our new Public Doorway!
-      await axios.post('http://localhost:5000/api/public/contact', formData);
+      await axios.post('https://bda-team-management.onrender.com/api/public/contact', formData);
       setSubmitted(true); // Changes the screen to a "Thank You" message
     } catch (err) {
       setErr('Failed to send message. Please try again.');
