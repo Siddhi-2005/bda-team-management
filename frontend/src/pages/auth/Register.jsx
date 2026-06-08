@@ -155,30 +155,7 @@ const Register = () => {
             </div>
           </div>
 
-          <div className="form-group">
-            <label>System Role</label>
-            <div style={{ position: 'relative' }}>
-              <RiShieldUserLine 
-                style={{ 
-                  position: 'absolute', 
-                  left: '16px', 
-                  top: '50%', 
-                  transform: 'translateY(-50%)', 
-                  color: 'var(--text-secondary)' 
-                }} 
-              />
-              <select
-                className="form-control"
-                style={{ paddingLeft: '45px' }}
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                <option value="bda">Business Development Associate (BDA)</option>
-                <option value="manager">Team Manager</option>
-                <option value="admin">System Administrator</option>
-              </select>
-            </div>
-          </div>
+
 
           <div className="form-row">
             <div className="form-group">
