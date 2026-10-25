@@ -57,16 +57,24 @@ app.get('/', (req, res) => {
 });
 
 // One-time setup endpoint — seeds the database with demo users & realistic data.
-// Protected by a setup key so only you can run it. Hit it once, then forget about it.
+// Requires process.env.SETUP_KEY and refuses to run if any user already exists.
 app.post('/api/setup', async (req, res) => {
   try {
     const { setupKey } = req.body;
-    if (setupKey !== (process.env.SETUP_KEY || 'bda-setup-2026')) {
+    if (!process.env.SETUP_KEY) {
+      return res.status(403).json({ success: false, message: 'Setup endpoint disabled: SETUP_KEY is not configured.' });
+    }
+    if (setupKey !== process.env.SETUP_KEY) {
       return res.status(403).json({ success: false, message: 'Invalid setup key' });
+    }
+    const User = require('./models/User');
+    const userCount = await User.countDocuments();
+    if (userCount > 0) {
+      return res.status(403).json({ success: false, message: 'Setup refused: database already has users.' });
     }
     const seedDatabase = require('./utils/seeder');
     await seedDatabase();
-    res.json({ success: true, message: 'Database seeded with demo data. Login with admin@test.com / password123' });
+    res.json({ success: true, message: 'Database seeded with demo data.' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
