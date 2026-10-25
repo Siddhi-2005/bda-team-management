@@ -16,10 +16,16 @@ const vercelOriginRegex = /^https:\/\/.*\.vercel\.app$/;
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || localOrigins.includes(origin) || vercelOriginRegex.test(origin)) {
+    if (!origin) return callback(null, true);
+    const clientUrl = process.env.CLIENT_URL;
+    if (
+      localOrigins.includes(origin) ||
+      vercelOriginRegex.test(origin) ||
+      (clientUrl && origin === clientUrl)
+    ) {
       callback(null, true);
     } else {
-      callback(null, true); // Allow during development
+      callback(new Error('Blocked by CORS policy'));
     }
   },
   credentials: true
