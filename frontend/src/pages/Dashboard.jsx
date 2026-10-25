@@ -79,22 +79,22 @@ const Dashboard = () => {
     return new Date().toLocaleDateString('en-GB', options);
   };
 
-  const totalUsers = stats?.totalUsers || 12;
-  const totalTeams = stats?.totalTeams || 2;
-  const totalTasks = stats?.totalTasks || 5;
-  const totalRevenue = stats?.totalRevenue || 1860000;
+  const totalUsers = stats?.totalUsers ?? (user?.role === 'bda' ? 1 : 0);
+  const totalTeams = stats?.totalTeams ?? (user?.team ? 1 : 0);
+  const totalTasks = stats?.totalTasks ?? 0;
+  const totalRevenue = stats?.totalRevenue ?? 0;
 
-  const topPerformers = (stats?.topPerformers && stats.topPerformers.length > 0)
+  const topPerformers = stats?.topPerformers && stats.topPerformers.length > 0
     ? stats.topPerformers
-    : SAMPLE_TOP_PERFORMERS;
+    : [];
 
-  const recentCustomers = (activity?.recentLeads && activity.recentLeads.length > 0)
+  const recentCustomers = activity?.recentLeads && activity.recentLeads.length > 0
     ? activity.recentLeads
-    : SAMPLE_RECENT_CUSTOMERS;
+    : [];
 
-  const recentTasks = (activity?.recentTasks && activity.recentTasks.length > 0)
+  const recentTasks = activity?.recentTasks && activity.recentTasks.length > 0
     ? activity.recentTasks
-    : SAMPLE_RECENT_TASKS;
+    : [];
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Siddhi';
 
