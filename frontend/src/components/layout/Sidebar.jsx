@@ -132,8 +132,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             {getInitials(user?.name)}
           </div>
           <div className="user-badge-info">
-            <span className="user-badge-name">{user?.name || 'Siddhi Pawar'}</span>
-            <span className="user-badge-role">{user?.role || 'Admin'}</span>
+            <span className="user-badge-name">{user?.name || ''}</span>
+            <span className="user-badge-role">{user?.role || ''}</span>
           </div>
         </div>
 

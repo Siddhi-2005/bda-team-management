@@ -15,27 +15,6 @@ import {
   LuArrowUpRight
 } from 'react-icons/lu';
 
-// Beautiful sample data matching screenshot when backend is fresh or sparse
-const SAMPLE_TOP_PERFORMERS = [
-  { name: 'Ankit Patel', wonDeals: 5, revenue: 920000 },
-  { name: 'Meera Iyer', wonDeals: 3, revenue: 640000 },
-  { name: 'Rohan Desai', wonDeals: 2, revenue: 300000 }
-];
-
-const SAMPLE_RECENT_CUSTOMERS = [
-  { name: 'Aarav Verma', assignedTo: { name: 'Ankit Patel' }, value: 480000, status: 'negotiation' },
-  { name: 'Vikram Saluja', assignedTo: { name: 'Meera Iyer' }, value: 500000, status: 'proposal' },
-  { name: 'Meera Iyer', assignedTo: { name: 'Ankit Patel' }, value: 225000, status: 'qualified' },
-  { name: 'Rohan Desai', assignedTo: { name: 'Meera Iyer' }, value: 900000, status: 'won' }
-];
-
-const SAMPLE_RECENT_TASKS = [
-  { title: 'Prepare enterprise pitch deck', assignedTo: { name: 'Ankit Patel' }, priority: 'high', status: 'In Progress' },
-  { title: 'Follow up with Google lead', assignedTo: { name: 'Meera Iyer' }, priority: 'critical', status: 'To Do' },
-  { title: 'Bangalore tech park research', assignedTo: { name: 'Ankit Patel' }, priority: 'medium', status: 'Done' },
-  { title: 'Send revised proposal', assignedTo: { name: 'Meera Iyer' }, priority: 'high', status: 'In Review' }
-];
-
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -96,7 +75,7 @@ const Dashboard = () => {
     ? activity.recentTasks
     : [];
 
-  const firstName = user?.name ? user.name.split(' ')[0] : 'Siddhi';
+  const firstName = user?.name ? user.name.split(' ')[0] : '';
 
   return (
     <div>
