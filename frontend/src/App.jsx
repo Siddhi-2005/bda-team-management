@@ -46,6 +46,16 @@ const PrivateRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" replace />;
 };
 
+// RoleRoute wrapper: only allows specific roles, others navigate to /dashboard
+const RoleRoute = ({ roles, children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (roles && !roles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+};
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -69,8 +79,22 @@ const App = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/leads" element={<Leads />} />
             <Route path="/tasks" element={<Tasks />} />
-            <Route path="/teams" element={<Teams />} />
-            <Route path="/members" element={<Members />} />
+            <Route
+              path="/teams"
+              element={
+                <RoleRoute roles={['admin', 'manager']}>
+                  <Teams />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/members"
+              element={
+                <RoleRoute roles={['admin', 'manager']}>
+                  <Members />
+                </RoleRoute>
+              }
+            />
             <Route path="/profile" element={<Profile />} />
           </Route>
 
