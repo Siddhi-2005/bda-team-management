@@ -1,3 +1,8 @@
+const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/bda_test';
+if (!mongoUri.includes('127.0.0.1') && !mongoUri.includes('localhost')) {
+  throw new Error(`CRITICAL TEST GUARD: MONGO_URI must point to 127.0.0.1 or localhost, received: ${mongoUri}`);
+}
+
 const request = require('supertest');
 const mongoose = require('mongoose');
 const app = require('../server');
