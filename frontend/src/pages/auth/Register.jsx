@@ -22,7 +22,7 @@ const Register = () => {
     phone: '',
     department: 'Business Development',
     region: 'West',
-    salesTarget: '2500000'
+    salesTarget: '0'
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');

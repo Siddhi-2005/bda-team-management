@@ -11,12 +11,12 @@ import {
 } from 'recharts';
 
 const STAGE_CONFIG = {
-  new: { label: 'New', color: '#0284c7', count: 14 },
-  contacted: { label: 'Conta.', color: '#d97706', count: 9 },
-  qualified: { label: 'Quali.', color: '#7c3aed', count: 7 },
-  proposal: { label: 'Propo.', color: '#ea580c', count: 5 },
-  negotiation: { label: 'Negot.', color: '#0ea5e9', count: 3 },
-  won: { label: 'Won', color: '#059669', count: 4 }
+  new: { label: 'New', color: '#0284c7' },
+  contacted: { label: 'Conta.', color: '#d97706' },
+  qualified: { label: 'Quali.', color: '#7c3aed' },
+  proposal: { label: 'Propo.', color: '#ea580c' },
+  negotiation: { label: 'Negot.', color: '#0ea5e9' },
+  won: { label: 'Won', color: '#059669' }
 };
 
 const LeadFunnelChart = ({ data }) => {
@@ -35,7 +35,7 @@ const LeadFunnelChart = ({ data }) => {
         stageKey,
         label: cfg.label,
         color: cfg.color,
-        count: stageMap[stageKey] !== undefined ? stageMap[stageKey] : cfg.count
+        count: stageMap[stageKey] !== undefined ? stageMap[stageKey] : 0
       };
     });
   }, [data]);

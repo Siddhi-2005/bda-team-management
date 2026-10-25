@@ -9,37 +9,24 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-const DEFAULT_SAMPLE_MONTHS = [
-  { monthName: 'May', count: 12 },
-  { monthName: 'Jun', count: 16 },
-  { monthName: 'Jul', count: 21 },
-  { monthName: 'Aug', count: 19 },
-  { monthName: 'Sep', count: 26 },
-  { monthName: 'Oct', count: 31 }
-];
-
 const PerformanceChart = ({ data }) => {
-  // If no data or sparse, format with sample 6 months or normalize real data
   const chartData = React.useMemo(() => {
-    if (!data || data.length === 0) {
-      return DEFAULT_SAMPLE_MONTHS;
+    const months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
+
+    if (data && data.length > 0) {
+      const allMonthsNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return data.map((item) => {
+        const monthIndex = item._id?.month ? item._id.month - 1 : 0;
+        return {
+          monthName: allMonthsNames[monthIndex] || 'Mo',
+          count: item.count || 0,
+          value: item.value || 0
+        };
+      });
     }
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    // If fewer than 4 months, merge with reasonable trend
-    if (data.length < 3) {
-      return DEFAULT_SAMPLE_MONTHS;
-    }
-
-    return data.map((item) => {
-      const monthIndex = item._id?.month ? item._id.month - 1 : 0;
-      return {
-        monthName: months[monthIndex] || 'Mo',
-        count: item.count || 0,
-        value: item.value || 0
-      };
-    });
+    // Clean zero baseline for fresh accounts
+    return months.map((m) => ({ monthName: m, count: 0 }));
   }, [data]);
 
   const CustomTooltip = ({ active, payload }) => {

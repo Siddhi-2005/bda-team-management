@@ -10,13 +10,34 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-const DEFAULT_TEAMS = [
-  { name: 'Western Wolves', target: 2000000, achieved: 1200000 },
-  { name: 'Southern Stars', target: 1500000, achieved: 480000 }
-];
-
 const TeamStatsChart = ({ data }) => {
-  const chartData = (data && data.length > 0) ? data : DEFAULT_TEAMS;
+  const chartData = data && data.length > 0 ? data : [];
+
+  if (chartData.length === 0) {
+    return (
+      <div style={{
+        width: '100%',
+        height: 260,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f8fafc',
+        borderRadius: '12px',
+        border: '1px dashed #cbd5e1',
+        color: '#64748b',
+        padding: '20px',
+        textAlign: 'center'
+      }}>
+        <p style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', marginBottom: '4px' }}>
+          No Target Allocated Yet
+        </p>
+        <p style={{ fontSize: '0.78rem', color: '#94a3b8', maxWidth: '300px' }}>
+          Your sales manager will assign your monthly team quota and individual revenue targets.
+        </p>
+      </div>
+    );
+  }
 
   const formatYAxis = (val) => {
     if (val === 0) return '₹0';

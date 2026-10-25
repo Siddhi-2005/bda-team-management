@@ -206,22 +206,30 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {topPerformers.map((item, index) => (
-                <tr key={index}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div className="avatar-circle" style={{ width: '28px', height: '28px', fontSize: '0.75rem', background: '#e0e7ff', color: '#3730a3' }}>
-                        {item.name ? item.name[0] : 'U'}
-                      </div>
-                      <span className="cell-bold-main">{item.name}</span>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'center', fontWeight: 600 }}>{item.wonDeals}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-main)' }}>
-                    ₹{item.revenue?.toLocaleString('en-IN')}
+              {topPerformers.length === 0 ? (
+                <tr>
+                  <td colSpan="3" style={{ textAlign: 'center', padding: '28px', color: '#94a3b8', fontSize: '0.84rem' }}>
+                    No closed deals won yet. When deals are marked as 'Won', top performers will appear here.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                topPerformers.map((item, index) => (
+                  <tr key={index}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="avatar-circle" style={{ width: '28px', height: '28px', fontSize: '0.75rem', background: '#e0e7ff', color: '#3730a3' }}>
+                          {item.name ? item.name[0] : 'U'}
+                        </div>
+                        <span className="cell-bold-main">{item.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{item.wonDeals}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-main)' }}>
+                      ₹{item.revenue?.toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -242,29 +250,37 @@ const Dashboard = () => {
           </div>
           <table className="clean-data-table">
             <tbody>
-              {recentCustomers.map((cust, idx) => (
-                <tr key={idx}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div className="avatar-circle" style={{ width: '28px', height: '28px', fontSize: '0.75rem', background: '#eff6ff', color: '#1d4ed8' }}>
-                        {cust.name ? cust.name[0] : 'C'}
-                      </div>
-                      <div>
-                        <div className="cell-bold-main">{cust.name}</div>
-                        <div className="cell-sub-muted">Assigned to {cust.assignedTo?.name || 'Unassigned'}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className="cell-bold-main">₹{cust.value?.toLocaleString('en-IN')}</div>
-                    <div style={{ marginTop: '2px' }}>
-                      <span className={`status-pill status-${cust.status}`}>
-                        {cust.status}
-                      </span>
-                    </div>
+              {recentCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan="2" style={{ textAlign: 'center', padding: '28px', color: '#94a3b8', fontSize: '0.84rem' }}>
+                    No prospects in your pipeline yet. Click '+ New' above to create your first customer.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentCustomers.map((cust, idx) => (
+                  <tr key={idx}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="avatar-circle" style={{ width: '28px', height: '28px', fontSize: '0.75rem', background: '#eff6ff', color: '#1d4ed8' }}>
+                          {cust.name ? cust.name[0] : 'C'}
+                        </div>
+                        <div>
+                          <div className="cell-bold-main">{cust.name}</div>
+                          <div className="cell-sub-muted">Assigned to {cust.assignedTo?.name || 'Unassigned'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="cell-bold-main">₹{cust.value?.toLocaleString('en-IN')}</div>
+                      <div style={{ marginTop: '2px' }}>
+                        <span className={`status-pill status-${cust.status}`}>
+                          {cust.status}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -282,29 +298,37 @@ const Dashboard = () => {
           </div>
           <table className="clean-data-table">
             <tbody>
-              {recentTasks.map((task, idx) => (
-                <tr key={idx}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div className="avatar-circle" style={{ width: '28px', height: '28px', fontSize: '0.75rem', background: '#eff6ff', color: '#1d4ed8' }}>
-                        {task.assignedTo?.name ? task.assignedTo.name[0] : 'A'}
-                      </div>
-                      <div>
-                        <div className="cell-bold-main">{task.title}</div>
-                        <div className="cell-sub-muted">Assigned to {task.assignedTo?.name || 'Associate'}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <span className={`status-pill priority-${task.priority?.toLowerCase() || 'medium'}`} style={{ marginRight: '6px' }}>
-                      {task.priority || 'Medium'}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
-                      {task.status}
-                    </span>
+              {recentTasks.length === 0 ? (
+                <tr>
+                  <td colSpan="2" style={{ textAlign: 'center', padding: '28px', color: '#94a3b8', fontSize: '0.84rem' }}>
+                    No tasks assigned right now. Click 'Add task' above to schedule work.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentTasks.map((task, idx) => (
+                  <tr key={idx}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="avatar-circle" style={{ width: '28px', height: '28px', fontSize: '0.75rem', background: '#eff6ff', color: '#1d4ed8' }}>
+                          {task.assignedTo?.name ? task.assignedTo.name[0] : 'A'}
+                        </div>
+                        <div>
+                          <div className="cell-bold-main">{task.title}</div>
+                          <div className="cell-sub-muted">Assigned to {task.assignedTo?.name || 'Associate'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <span className={`status-pill priority-${task.priority?.toLowerCase() || 'medium'}`} style={{ marginRight: '6px' }}>
+                        {task.priority || 'Medium'}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
+                        {task.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

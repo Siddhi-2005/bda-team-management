@@ -116,23 +116,24 @@ exports.register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
 
-    // Public register can never create an admin or manager
+    // Public register creates a clean BDA user without fake teams or targets
     const user = await User.create({
       name,
       email,
       password,
       role: 'bda',
-      phone,
-      department,
-      region,
-      salesTarget
+      phone: phone || '',
+      department: department || 'Business Development',
+      region: region || 'North',
+      salesTarget: Number(salesTarget) || 0
     });
 
-    if (user.role === 'bda') {
+    // Only create onboarding sample data if explicitly requested (e.g. during guided demo onboarding)
+    if (activeTaskCount > 0 || openLeadCount > 0 || wonRevenue > 0) {
       await createOnboardingData(user, {
         department,
         region,
-        salesTarget,
+        salesTarget: user.salesTarget,
         teamName,
         activeTaskCount,
         openLeadCount,
