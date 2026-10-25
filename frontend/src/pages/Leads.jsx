@@ -80,6 +80,7 @@ const Leads = () => {
   };
 
   const fetchDropdowns = async () => {
+    if (user?.role === 'bda') return;
     try {
       const [uRes, tRes] = await Promise.allSettled([
         api.get('/users?role=bda'),
@@ -95,6 +96,18 @@ const Leads = () => {
       // Fallback
     }
   };
+
+  const assignableUsers = associates.filter((a) => {
+    if (user?.role === 'admin') {
+      return !!a.team;
+    }
+    if (user?.role === 'manager') {
+      const myTeamId = user.team?._id || user.team;
+      const aTeamId = a.team?._id || a.team;
+      return myTeamId && String(aTeamId) === String(myTeamId);
+    }
+    return false;
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -117,8 +130,8 @@ const Leads = () => {
       value: '',
       status: 'new',
       source: 'website',
-      assignedTo: associates[0]?._id || '',
-      team: teams[0]?._id || '',
+      assignedTo: '',
+      team: '',
       followUpDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
       notes: ''
     });
@@ -152,6 +165,7 @@ const Leads = () => {
         ...formData,
         value: Number(formData.value) || 0
       };
+      if (!payload.assignedTo) delete payload.assignedTo;
 
       if (editingLead) {
         await api.put(`/leads/${editingLead._id}`, payload);
@@ -161,19 +175,7 @@ const Leads = () => {
       setModalOpen(false);
       fetchLeads();
     } catch (err) {
-      // Local preview update
-      if (editingLead) {
-        setLeads(leads.map((l) => (l._id === editingLead._id ? { ...l, ...formData, value: Number(formData.value) || 0 } : l)));
-      } else {
-        const newEntry = {
-          _id: 'local-' + Date.now(),
-          ...formData,
-          value: Number(formData.value) || 0,
-          assignedTo: { name: 'Ankit Patel' }
-        };
-        setLeads([newEntry, ...leads]);
-      }
-      setModalOpen(false);
+      alert(err.response?.data?.message || 'Could not save customer record.');
     }
   };
 
@@ -181,9 +183,9 @@ const Leads = () => {
     if (!window.confirm('Are you sure you want to delete this customer?')) return;
     try {
       await api.delete(`/leads/${id}`);
-      setLeads(leads.filter((l) => l._id !== id));
+      fetchLeads();
     } catch (err) {
-      setLeads(leads.filter((l) => l._id !== id));
+      alert(err.response?.data?.message || 'Could not delete customer record.');
     }
   };
 
@@ -553,6 +555,24 @@ const Leads = () => {
                   />
                 </div>
               </div>
+
+              {(user?.role === 'admin' || user?.role === 'manager') && (
+                <div className="form-group">
+                  <label className="form-label">Assign To</label>
+                  <select
+                    value={formData.assignedTo}
+                    onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                    className="form-select"
+                  >
+                    <option value="">Unassigned</option>
+                    {assignableUsers.map((a) => (
+                      <option key={a._id} value={a._id}>
+                        {a.name} ({a.team?.name || 'Assigned'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="form-group">
                 <label className="form-label">Meeting Notes & Context</label>
