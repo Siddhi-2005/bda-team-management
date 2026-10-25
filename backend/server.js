@@ -57,6 +57,11 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/ai', aiRoutes);
 
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true });
+});
+
 // Root Route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to BDA Team Management System API' });
