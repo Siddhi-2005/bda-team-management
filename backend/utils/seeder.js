@@ -27,12 +27,15 @@ const seedDatabase = async () => {
     await Lead.deleteMany();
     console.log('🧹 Cleaned existing database collections');
 
-    // 1. Create Users
+    // 1. Create Users (Support both @test.com and @bda.com logins)
     const usersData = [
+      { name: 'Siddhi Pawar', email: 'admin@test.com', password: 'password123', role: 'admin', phone: '+919988776655', department: 'Executive Management' },
       { name: 'Admin User', email: 'admin@bda.com', password: 'password123', role: 'admin', phone: '+919988776655', department: 'Executive Management' },
+      { name: 'Priya Sharma', email: 'manager@test.com', password: 'password123', role: 'manager', phone: '+919876543210', department: 'Enterprise Sales' },
       { name: 'Priya Sharma', email: 'priya@bda.com', password: 'password123', role: 'manager', phone: '+919876543210', department: 'Enterprise Sales' },
-      { name: 'Rahul Verma', email: 'rahul@bda.com', password: 'password123', role: 'manager', phone: '+918765432109', department: 'SME Sales' },
+      { name: 'Ankit Patel', email: 'bda@test.com', password: 'password123', role: 'bda', phone: '+917654321098', department: 'Enterprise Sales' },
       { name: 'Ankit Patel', email: 'ankit@bda.com', password: 'password123', role: 'bda', phone: '+917654321098', department: 'Enterprise Sales' },
+      { name: 'Rahul Verma', email: 'rahul@bda.com', password: 'password123', role: 'manager', phone: '+918765432109', department: 'SME Sales' },
       { name: 'Sneha Reddy', email: 'sneha@bda.com', password: 'password123', role: 'bda', phone: '+916543210987', department: 'Enterprise Sales' },
       { name: 'Vikram Singh', email: 'vikram@bda.com', password: 'password123', role: 'bda', phone: '+915432109876', department: 'SME Sales' },
       { name: 'Meera Joshi', email: 'meera@bda.com', password: 'password123', role: 'bda', phone: '+914321098765', department: 'SME Sales' },
@@ -46,14 +49,17 @@ const seedDatabase = async () => {
     }
     console.log(`👤 Created ${users.length} Users`);
 
-    const admin = users[0];
-    const manager1 = users[1];
-    const manager2 = users[2];
-    const bda1 = users[3];
-    const bda2 = users[4];
-    const bda3 = users[5];
-    const bda4 = users[6];
-    const bda5 = users[7];
+    const admin = users[0]; // Siddhi Pawar (admin@test.com)
+    const admin2 = users[1]; // Admin User (admin@bda.com)
+    const manager1 = users[2]; // Priya Sharma (manager@test.com)
+    const manager1_alt = users[3]; // Priya Sharma (priya@bda.com)
+    const bda1 = users[4]; // Ankit Patel (bda@test.com)
+    const bda1_alt = users[5]; // Ankit Patel (ankit@bda.com)
+    const manager2 = users[6]; // Rahul Verma
+    const bda2 = users[7]; // Sneha Reddy
+    const bda3 = users[8]; // Vikram Singh
+    const bda4 = users[9]; // Meera Joshi
+    const bda5 = users[10]; // Arjun Das
 
     // 2. Create Teams
     const teamsData = [
@@ -61,7 +67,7 @@ const seedDatabase = async () => {
         name: 'Enterprise Growth Team',
         description: 'Focuses on securing enterprise-level partnerships and high-value contracts.',
         manager: manager1._id,
-        members: [bda1._id, bda2._id],
+        members: [bda1._id, bda1_alt._id, bda2._id],
         target: 5000000,
         achieved: 3200000,
         region: 'North'
@@ -88,8 +94,12 @@ const seedDatabase = async () => {
     const team2 = teams[1];
 
     // Update users with their respective teams
+    await User.findByIdAndUpdate(admin._id, { team: team1._id });
+    await User.findByIdAndUpdate(admin2._id, { team: team1._id });
     await User.findByIdAndUpdate(manager1._id, { team: team1._id });
+    await User.findByIdAndUpdate(manager1_alt._id, { team: team1._id });
     await User.findByIdAndUpdate(bda1._id, { team: team1._id });
+    await User.findByIdAndUpdate(bda1_alt._id, { team: team1._id });
     await User.findByIdAndUpdate(bda2._id, { team: team1._id });
 
     await User.findByIdAndUpdate(manager2._id, { team: team2._id });
@@ -113,8 +123,10 @@ const seedDatabase = async () => {
     await Task.insertMany(tasksData);
     console.log(`📋 Created ${tasksData.length} Tasks`);
 
-    // 4. Create Leads
+    // 4. Create Leads (matching landing page showcase + realistic sales pipeline)
     const leadsData = [
+      { name: 'Aarav Verma', email: 'aarav@sharmatextiles.in', phone: '+919820112233', company: 'Sharma Textiles', status: 'negotiation', source: 'referral', value: 480000, assignedTo: bda1._id, team: team1._id, notes: 'Met with Aarav Verma. Discussed bulk supply contract and ERP integrations.', followUpDate: new Date(Date.now() + 2*24*60*60*1000) },
+      { name: 'Rohan Desai', email: 'rohan@desairealty.in', phone: '+919820998877', company: 'Desai Realty', status: 'won', source: 'website', value: 900000, assignedTo: bda2._id, team: team1._id, notes: 'Commercial real estate CRM solution closed and contract signed.', closedDate: new Date(Date.now() - 4*24*60*60*1000) },
       { name: 'Google Cloud Platform', email: 'procurement@google.com', phone: '+1234567890', company: 'Google Inc.', status: 'negotiation', source: 'referral', value: 1500000, assignedTo: bda1._id, team: team1._id, notes: 'Interested in bulk server security licenses.', followUpDate: new Date(Date.now() + 2*24*60*60*1000) },
       { name: 'Microsoft Enterprise', email: 'sales@microsoft.com', phone: '+1234567891', company: 'Microsoft', status: 'proposal', source: 'website', value: 2000000, assignedTo: bda1._id, team: team1._id, notes: 'Sent draft SLA last Thursday.', followUpDate: new Date(Date.now() + 4*24*60*60*1000) },
       { name: 'Tata Consultancy Services', email: 'partner@tcs.com', phone: '+919123456780', company: 'TCS Ltd.', status: 'won', source: 'social_media', value: 1200000, assignedTo: bda2._id, team: team1._id, notes: 'Deal closed! Training scheduled for next month.', closedDate: new Date(Date.now() - 5*24*60*60*1000) },

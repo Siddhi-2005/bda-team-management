@@ -3,57 +3,30 @@ import api from '../api/axios';
 
 const AuthContext = createContext(null);
 
-// Default demo user matching screenshot
-const DEFAULT_DEMO_USERS = {
-  admin: {
-    _id: '671ad0000000000000000001',
-    name: 'Siddhi Pawar',
-    email: 'admin@test.com',
-    role: 'admin',
-    department: 'Business Development',
-    phone: '+91 98200 11223',
-    region: 'West',
-    salesTarget: 2500000
-  },
-  manager: {
-    _id: '671ad0000000000000000002',
-    name: 'Priya Sharma',
-    email: 'manager@test.com',
-    role: 'manager',
-    department: 'Enterprise Sales',
-    phone: '+91 98765 43210',
-    region: 'North',
-    salesTarget: 1800000
-  },
-  bda: {
-    _id: '671ad0000000000000000003',
-    name: 'Ankit Patel',
-    email: 'bda@test.com',
-    role: 'bda',
-    department: 'Direct Sales',
-    phone: '+91 91234 56789',
-    region: 'West',
-    salesTarget: 950000
-  }
+// Demo credentials (matching the seeder.js accounts)
+const DEMO_ACCOUNTS = {
+  admin:   { email: 'admin@test.com',   password: 'password123', label: 'Siddhi Pawar (Admin)' },
+  manager: { email: 'manager@test.com', password: 'password123', label: 'Priya Sharma (Manager)' },
+  bda:     { email: 'bda@test.com',     password: 'password123', label: 'Ankit Patel (BDA)' }
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('user');
-      return saved ? JSON.parse(saved) : DEFAULT_DEMO_USERS.admin; // Default to Siddhi Pawar for demo
+      return saved ? JSON.parse(saved) : null;
     } catch {
-      return DEFAULT_DEMO_USERS.admin;
+      return null;
     }
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Check if token exists and verify user session
+  // On mount, verify the stored token against the backend
   useEffect(() => {
     const bootstrapAuth = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
+      if (token && !token.startsWith('demo-')) {
         try {
           const response = await api.get('/auth/me');
           if (response.data.success) {
@@ -61,20 +34,23 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('user', JSON.stringify(response.data.user));
           }
         } catch (err) {
-          console.warn('Backend sync failed, using cached session:', err.message);
+          // Token expired or invalid — clear stale session
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
         }
       }
     };
-
     bootstrapAuth();
   }, []);
 
+  // Real login — hits the backend API
   const login = async (email, password) => {
     try {
       setLoading(true);
       setError(null);
       const response = await api.post('/auth/login', { email, password });
-      
+
       if (response.data.success) {
         const { token, user: userData } = response.data;
         localStorage.setItem('token', token);
@@ -84,22 +60,6 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       }
     } catch (err) {
-      // Check if it's one of the demo logins
-      const lowerEmail = email?.toLowerCase();
-      if (lowerEmail.includes('admin')) {
-        loginDemo('admin');
-        setLoading(false);
-        return { success: true };
-      } else if (lowerEmail.includes('manager') || lowerEmail.includes('mgr')) {
-        loginDemo('manager');
-        setLoading(false);
-        return { success: true };
-      } else if (lowerEmail.includes('bda') || lowerEmail.includes('ankit')) {
-        loginDemo('bda');
-        setLoading(false);
-        return { success: true };
-      }
-
       setLoading(false);
       const msg = err.response?.data?.message || 'Login failed. Please check credentials.';
       setError(msg);
@@ -107,14 +67,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginDemo = (role = 'admin') => {
-    const demoUser = DEFAULT_DEMO_USERS[role] || DEFAULT_DEMO_USERS.admin;
-    const demoToken = 'demo-jwt-token-' + role;
-    localStorage.setItem('token', demoToken);
-    localStorage.setItem('user', JSON.stringify(demoUser));
-    setUser(demoUser);
-    setError(null);
-    return demoUser;
+  // Quick demo login — logs in with real seeder credentials via the API
+  const loginDemo = async (role = 'admin') => {
+    const acct = DEMO_ACCOUNTS[role] || DEMO_ACCOUNTS.admin;
+    return login(acct.email, acct.password);
   };
 
   const register = async (profileData) => {
@@ -122,7 +78,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await api.post('/auth/register', profileData);
-      
+
       if (response.data.success) {
         const { token, user: userData } = response.data;
         localStorage.setItem('token', token);
@@ -132,22 +88,10 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       }
     } catch (err) {
-      // Local fallback for quick preview if backend is starting
-      const newUser = {
-        _id: 'user-' + Date.now(),
-        name: profileData.name || 'Sales Professional',
-        email: profileData.email,
-        role: 'bda',
-        department: profileData.department || 'Sales',
-        phone: profileData.phone || '',
-        region: profileData.region || 'North',
-        salesTarget: Number(profileData.salesTarget) || 500000
-      };
-      localStorage.setItem('token', 'demo-token-' + Date.now());
-      localStorage.setItem('user', JSON.stringify(newUser));
-      setUser(newUser);
       setLoading(false);
-      return { success: true };
+      const msg = err.response?.data?.message || 'Registration failed.';
+      setError(msg);
+      return { success: false, message: msg };
     }
   };
 
@@ -167,11 +111,8 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       }
     } catch (err) {
-      // Update local state if backend call failed in preview
-      const updated = { ...user, ...profileData };
-      setUser(updated);
-      localStorage.setItem('user', JSON.stringify(updated));
-      return { success: true };
+      const msg = err.response?.data?.message || 'Profile update failed.';
+      return { success: false, message: msg };
     }
   };
 
@@ -184,7 +125,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    DEMO_ACCOUNTS
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

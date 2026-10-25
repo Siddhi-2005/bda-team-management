@@ -18,8 +18,8 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const { loginDemo } = useAuth();
 
-  const handleOpenDemo = (role = 'admin') => {
-    loginDemo(role);
+  const handleOpenDemo = async (role = 'admin') => {
+    await loginDemo(role);
     navigate('/dashboard');
   };
 

@@ -19,14 +19,21 @@ const DEMO_ROLES = [
     email: 'admin@test.com',
     password: 'password123',
     icon: LuShield,
-    desc: 'Full access, analytics and team setup'
+    desc: 'Siddhi Pawar — Full analytics & team control'
   },
   {
     role: 'Manager',
     email: 'manager@test.com',
     password: 'password123',
     icon: LuUsers,
-    desc: 'Team oversight and lead assignment'
+    desc: 'Priya Sharma — Team oversight & assignments'
+  },
+  {
+    role: 'BDA',
+    email: 'bda@test.com',
+    password: 'password123',
+    icon: LuTrendingUp,
+    desc: 'Ankit Patel — Lead conversions & tasks'
   }
 ];
 
@@ -60,13 +67,10 @@ const Login = () => {
       if (res && res.success) {
         navigate('/dashboard');
       } else {
-        // Fallback for seamless demo
-        loginDemo('admin');
-        navigate('/dashboard');
+        setErrorMsg(res?.message || 'Login failed. Check your credentials.');
       }
     } catch (err) {
-      loginDemo('admin');
-      navigate('/dashboard');
+      setErrorMsg('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

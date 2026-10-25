@@ -56,6 +56,22 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to BDA Team Management System API' });
 });
 
+// One-time setup endpoint — seeds the database with demo users & realistic data.
+// Protected by a setup key so only you can run it. Hit it once, then forget about it.
+app.post('/api/setup', async (req, res) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== (process.env.SETUP_KEY || 'bda-setup-2026')) {
+      return res.status(403).json({ success: false, message: 'Invalid setup key' });
+    }
+    const seedDatabase = require('./utils/seeder');
+    await seedDatabase();
+    res.json({ success: true, message: 'Database seeded with demo data. Login with admin@test.com / password123' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Error Handler Middleware
 app.use(errorHandler);
 
