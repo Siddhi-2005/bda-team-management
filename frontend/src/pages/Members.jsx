@@ -12,81 +12,6 @@ import {
   LuUser
 } from 'react-icons/lu';
 
-const DEFAULT_SAMPLE_MEMBERS = [
-  {
-    _id: 'mem-1',
-    name: 'Siddhi Pawar',
-    email: 'admin@test.com',
-    role: 'admin',
-    department: 'Business Development',
-    phone: '+91 98200 11223',
-    region: 'West',
-    salesTarget: 2500000,
-    isActive: true,
-    team: { name: 'Western Wolves' }
-  },
-  {
-    _id: 'mem-2',
-    name: 'Priya Sharma',
-    email: 'priya@bda.com',
-    role: 'manager',
-    department: 'Enterprise Sales',
-    phone: '+91 98765 43210',
-    region: 'West',
-    salesTarget: 2000000,
-    isActive: true,
-    team: { name: 'Western Wolves' }
-  },
-  {
-    _id: 'mem-3',
-    name: 'Rahul Verma',
-    email: 'rahul@bda.com',
-    role: 'manager',
-    department: 'SME Sales',
-    phone: '+91 87654 32109',
-    region: 'South',
-    salesTarget: 1500000,
-    isActive: true,
-    team: { name: 'Southern Stars' }
-  },
-  {
-    _id: 'mem-4',
-    name: 'Ankit Patel',
-    email: 'ankit@bda.com',
-    role: 'bda',
-    department: 'Direct Sales',
-    phone: '+91 91234 56789',
-    region: 'West',
-    salesTarget: 950000,
-    isActive: true,
-    team: { name: 'Western Wolves' }
-  },
-  {
-    _id: 'mem-5',
-    name: 'Meera Iyer',
-    email: 'meera@bda.com',
-    role: 'bda',
-    department: 'Direct Sales',
-    phone: '+91 92345 67890',
-    region: 'South',
-    salesTarget: 900000,
-    isActive: true,
-    team: { name: 'Southern Stars' }
-  },
-  {
-    _id: 'mem-6',
-    name: 'Rohan Desai',
-    email: 'rohan@bda.com',
-    role: 'bda',
-    department: 'Direct Sales',
-    phone: '+91 93456 78901',
-    region: 'South',
-    salesTarget: 850000,
-    isActive: true,
-    team: { name: 'Southern Stars' }
-  }
-];
-
 const Members = () => {
   const { user } = useAuth();
   const [members, setMembers] = useState([]);
@@ -109,7 +34,7 @@ const Members = () => {
     phone: '',
     department: 'Business Development',
     region: 'West',
-    salesTarget: 850000,
+    salesTarget: 0,
     team: '',
     isActive: true
   });
@@ -122,13 +47,13 @@ const Members = () => {
       if (statusFilter) params.append('isActive', statusFilter);
 
       const res = await api.get(`/users?${params.toString()}`);
-      if (res.data?.success && res.data.users?.length > 0) {
-        setMembers(res.data.users);
+      if (res.data?.success) {
+        setMembers(res.data.users || []);
       } else {
-        setMembers(DEFAULT_SAMPLE_MEMBERS);
+        setMembers([]);
       }
     } catch {
-      setMembers(DEFAULT_SAMPLE_MEMBERS);
+      setMembers([]);
     } finally {
       setLoading(false);
     }
@@ -304,45 +229,53 @@ const Members = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredMembers.map((m) => (
-              <tr key={m._id}>
-                <td style={{ paddingLeft: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div className="avatar-circle" style={{ width: '32px', height: '32px', fontSize: '0.8rem', background: '#e0e7ff', color: '#3730a3' }}>
-                      {m.name ? m.name[0] : 'U'}
-                    </div>
-                    <div>
-                      <div className="cell-bold-main">{m.name}</div>
-                      <div className="cell-sub-muted">{m.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td>{getRoleBadge(m.role)}</td>
-                <td>{m.team?.name || 'Unassigned'}</td>
-                <td>{m.phone || '—'}</td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: m.isActive ? '#10b981' : '#ef4444' }} />
-                    <span style={{ fontSize: '0.78rem', color: m.isActive ? '#059669' : '#dc2626', fontWeight: 600 }}>
-                      {m.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <span style={{ fontWeight: 700, color: '#0f172a' }}>
-                    ₹{Number(m.salesTarget || 0).toLocaleString('en-IN')}
-                  </span>
-                </td>
-                <td style={{ textAlign: 'right', paddingRight: '24px' }}>
-                  <button onClick={() => openEditModal(m)} className="action-icon-btn" title="Edit">
-                    <LuPencil size={14} />
-                  </button>
-                  <button onClick={() => handleDeleteMember(m._id)} className="action-icon-btn delete" title="Delete">
-                    <LuTrash2 size={14} />
-                  </button>
+            {filteredMembers.length === 0 ? (
+              <tr>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                  No members found matching your filter criteria. Click '+ New Member' to onboard sales reps.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredMembers.map((m) => (
+                <tr key={m._id}>
+                  <td style={{ paddingLeft: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div className="avatar-circle" style={{ width: '32px', height: '32px', fontSize: '0.8rem', background: '#e0e7ff', color: '#3730a3' }}>
+                        {m.name ? m.name[0] : 'U'}
+                      </div>
+                      <div>
+                        <div className="cell-bold-main">{m.name}</div>
+                        <div className="cell-sub-muted">{m.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{getRoleBadge(m.role)}</td>
+                  <td>{m.team?.name || 'Unassigned'}</td>
+                  <td>{m.phone || '—'}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: m.isActive ? '#10b981' : '#ef4444' }} />
+                      <span style={{ fontSize: '0.78rem', color: m.isActive ? '#059669' : '#dc2626', fontWeight: 600 }}>
+                        {m.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                      ₹{Number(m.salesTarget || 0).toLocaleString('en-IN')}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right', paddingRight: '24px' }}>
+                    <button onClick={() => openEditModal(m)} className="action-icon-btn" title="Edit">
+                      <LuPencil size={14} />
+                    </button>
+                    <button onClick={() => handleDeleteMember(m._id)} className="action-icon-btn delete" title="Delete">
+                      <LuTrash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

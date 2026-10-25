@@ -13,54 +13,6 @@ import {
   LuArrowRight
 } from 'react-icons/lu';
 
-const DEFAULT_SAMPLE_TASKS = [
-  {
-    _id: 'task-1',
-    title: 'Prepare enterprise pitch deck',
-    description: 'Finalize customized presentation for Q4 enterprise client rollout.',
-    status: 'inprogress',
-    priority: 'high',
-    assignedTo: { name: 'Ankit Patel' },
-    dueDate: '2026-10-28T00:00:00.000Z'
-  },
-  {
-    _id: 'task-2',
-    title: 'Follow up with Google lead',
-    description: 'Call procurement head regarding SLA agreements and onboarding schedule.',
-    status: 'todo',
-    priority: 'critical',
-    assignedTo: { name: 'Meera Iyer' },
-    dueDate: '2026-10-26T00:00:00.000Z'
-  },
-  {
-    _id: 'task-3',
-    title: 'Bangalore tech park research',
-    description: 'Compile list of 50 fast-growing logistics tech companies.',
-    status: 'done',
-    priority: 'medium',
-    assignedTo: { name: 'Ankit Patel' },
-    dueDate: '2026-10-24T00:00:00.000Z'
-  },
-  {
-    _id: 'task-4',
-    title: 'Send revised proposal',
-    description: 'Update pricing table to include volume tiered discounts for Mumbai account.',
-    status: 'review',
-    priority: 'high',
-    assignedTo: { name: 'Meera Iyer' },
-    dueDate: '2026-10-27T00:00:00.000Z'
-  },
-  {
-    _id: 'task-5',
-    title: 'Schedule demo with Saluja Logistics',
-    description: 'Confirm video call time with VP of Supply Chain operations.',
-    status: 'todo',
-    priority: 'medium',
-    assignedTo: { name: 'Rohan Desai' },
-    dueDate: '2026-10-29T00:00:00.000Z'
-  }
-];
-
 const TASK_STATUSES = [
   { key: 'todo', label: 'To Do', color: '#64748b' },
   { key: 'inprogress', label: 'In Progress', color: '#2563eb' },
@@ -102,13 +54,13 @@ const Tasks = () => {
       if (statusFilter) params.append('status', statusFilter);
 
       const res = await api.get(`/tasks?${params.toString()}`);
-      if (res.data?.success && res.data.tasks?.length > 0) {
-        setTasks(res.data.tasks);
+      if (res.data?.success) {
+        setTasks(res.data.tasks || []);
       } else {
-        setTasks(DEFAULT_SAMPLE_TASKS);
+        setTasks([]);
       }
     } catch {
-      setTasks(DEFAULT_SAMPLE_TASKS);
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -121,13 +73,13 @@ const Tasks = () => {
         api.get('/teams')
       ]);
       if (uRes.status === 'fulfilled' && uRes.value.data.success) {
-        setAssociates(uRes.value.data.users);
+        setAssociates(uRes.value.data.users || []);
       }
       if (tRes.status === 'fulfilled' && tRes.value.data.success) {
-        setTeams(tRes.value.data.teams);
+        setTeams(tRes.value.data.teams || []);
       }
     } catch {
-      // Fallback
+      // Clean fallback
     }
   };
 
@@ -143,8 +95,8 @@ const Tasks = () => {
       description: '',
       status: 'todo',
       priority: 'medium',
-      assignedTo: associates[0]?._id || '',
-      team: teams[0]?._id || '',
+      assignedTo: user?.role === 'bda' ? user._id : (associates[0]?._id || ''),
+      team: user?.team?._id || user?.team || (teams[0]?._id || ''),
       dueDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]
     });
     setModalOpen(true);
@@ -328,6 +280,11 @@ const Tasks = () => {
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {colTasks.length === 0 && (
+                    <div style={{ padding: '36px 16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.78rem', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #e2e8f0', margin: '8px 0' }}>
+                      No tasks in {st.label}
+                    </div>
+                  )}
                   {colTasks.map((task) => (
                     <div key={task._id} className="kanban-card" onClick={() => openEditModal(task)}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -404,34 +361,42 @@ const Tasks = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.map((task) => (
-                <tr key={task._id}>
-                  <td style={{ paddingLeft: '24px' }}>
-                    <div className="cell-bold-main">{task.title}</div>
-                    <div className="cell-sub-muted">{task.description || 'No description'}</div>
-                  </td>
-                  <td>
-                    <span className={`status-pill priority-${task.priority?.toLowerCase() || 'medium'}`}>
-                      {task.priority || 'Medium'}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: '0.8rem', color: '#475569' }}>
-                      {task.status}
-                    </span>
-                  </td>
-                  <td>{task.assignedTo?.name || 'Unassigned'}</td>
-                  <td>{formatDate(task.dueDate)}</td>
-                  <td style={{ textAlign: 'right', paddingRight: '24px' }}>
-                    <button onClick={() => openEditModal(task)} className="action-icon-btn" title="Edit">
-                      <LuPencil size={14} />
-                    </button>
-                    <button onClick={() => handleDeleteTask(task._id)} className="action-icon-btn delete" title="Delete">
-                      <LuTrash2 size={14} />
-                    </button>
+              {filteredTasks.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '0.84rem' }}>
+                    No tasks found. Click '+ New Task' above to schedule activities.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredTasks.map((task) => (
+                  <tr key={task._id}>
+                    <td style={{ paddingLeft: '24px' }}>
+                      <div className="cell-bold-main">{task.title}</div>
+                      <div className="cell-sub-muted">{task.description || 'No description'}</div>
+                    </td>
+                    <td>
+                      <span className={`status-pill priority-${task.priority?.toLowerCase() || 'medium'}`}>
+                        {task.priority || 'Medium'}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: '0.8rem', color: '#475569' }}>
+                        {task.status}
+                      </span>
+                    </td>
+                    <td>{task.assignedTo?.name || 'Unassigned'}</td>
+                    <td>{formatDate(task.dueDate)}</td>
+                    <td style={{ textAlign: 'right', paddingRight: '24px' }}>
+                      <button onClick={() => openEditModal(task)} className="action-icon-btn" title="Edit">
+                        <LuPencil size={14} />
+                      </button>
+                      <button onClick={() => handleDeleteTask(task._id)} className="action-icon-btn delete" title="Delete">
+                        <LuTrash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

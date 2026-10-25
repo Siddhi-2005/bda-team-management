@@ -15,69 +15,6 @@ import {
   LuCheck
 } from 'react-icons/lu';
 
-const DEFAULT_SAMPLE_LEADS = [
-  {
-    _id: 'sample-1',
-    name: 'Aarav Verma',
-    company: 'Sharma Textiles',
-    status: 'negotiation',
-    value: 480000,
-    source: 'website',
-    assignedTo: { name: 'Ankit Patel' },
-    followUpDate: '2026-11-01T00:00:00.000Z'
-  },
-  {
-    _id: 'sample-2',
-    name: 'Vikram Saluja',
-    company: 'Saluja Logistics',
-    status: 'proposal',
-    value: 500000,
-    source: 'referral',
-    assignedTo: { name: 'Meera Iyer' },
-    followUpDate: '2026-11-02T00:00:00.000Z'
-  },
-  {
-    _id: 'sample-3',
-    name: 'Meera Iyer',
-    company: 'Iyer Foods',
-    status: 'qualified',
-    value: 225000,
-    source: 'cold_call',
-    assignedTo: { name: 'Ankit Patel' },
-    followUpDate: '2026-11-03T00:00:00.000Z'
-  },
-  {
-    _id: 'sample-4',
-    name: 'Rohan Desai',
-    company: 'Desai Realty',
-    status: 'won',
-    value: 900000,
-    source: 'event',
-    assignedTo: { name: 'Meera Iyer' },
-    followUpDate: '2026-11-04T00:00:00.000Z'
-  },
-  {
-    _id: 'sample-5',
-    name: 'Priya Nair',
-    company: 'Nair Pharma',
-    status: 'new',
-    value: 150000,
-    source: 'social_media',
-    assignedTo: { name: 'Ankit Patel' },
-    followUpDate: '2026-11-05T00:00:00.000Z'
-  },
-  {
-    _id: 'sample-6',
-    name: 'Kabir Shah',
-    company: 'Shah Exports',
-    status: 'contacted',
-    value: 310000,
-    source: 'other',
-    assignedTo: { name: 'Meera Iyer' },
-    followUpDate: '2026-11-06T00:00:00.000Z'
-  }
-];
-
 const SOURCE_LABELS = {
   website: 'Website',
   referral: 'Referral',
@@ -133,13 +70,13 @@ const Leads = () => {
       if (search) params.append('search', search);
 
       const res = await api.get(`/leads?${params.toString()}`);
-      if (res.data.success && res.data.leads?.length > 0) {
-        setLeads(res.data.leads);
+      if (res.data?.success) {
+        setLeads(res.data.leads || []);
       } else {
-        setLeads(DEFAULT_SAMPLE_LEADS);
+        setLeads([]);
       }
     } catch (err) {
-      setLeads(DEFAULT_SAMPLE_LEADS);
+      setLeads([]);
     } finally {
       setLoading(false);
     }
@@ -152,13 +89,13 @@ const Leads = () => {
         api.get('/teams')
       ]);
       if (uRes.status === 'fulfilled' && uRes.value.data.success) {
-        setAssociates(uRes.value.data.users);
+        setAssociates(uRes.value.data.users || []);
       }
       if (tRes.status === 'fulfilled' && tRes.value.data.success) {
-        setTeams(tRes.value.data.teams);
+        setTeams(tRes.value.data.teams || []);
       }
     } catch {
-      // Fallback
+      // Clean fallback
     }
   };
 
@@ -183,8 +120,8 @@ const Leads = () => {
       value: '',
       status: 'new',
       source: 'website',
-      assignedTo: associates[0]?._id || '',
-      team: teams[0]?._id || '',
+      assignedTo: user?.role === 'bda' ? user._id : (associates[0]?._id || ''),
+      team: user?.team?._id || user?.team || (teams[0]?._id || ''),
       followUpDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
       notes: ''
     });
@@ -426,35 +363,43 @@ const Leads = () => {
               </tr>
             </thead>
             <tbody>
-              {leads.map((lead) => (
-                <tr key={lead._id}>
-                  <td style={{ paddingLeft: '24px' }}>
-                    <div className="cell-bold-main">{lead.name}</div>
-                    <div className="cell-sub-muted">{lead.company || 'Direct Contact'}</div>
-                  </td>
-                  <td>
-                    <span className={`status-pill status-${lead.status}`}>
-                      {lead.status}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                      ₹{lead.value?.toLocaleString('en-IN')}
-                    </span>
-                  </td>
-                  <td>{SOURCE_LABELS[lead.source] || lead.source || 'Other'}</td>
-                  <td>{lead.assignedTo?.name || 'Unassigned'}</td>
-                  <td>{formatDateDisplay(lead.followUpDate)}</td>
-                  <td style={{ textAlign: 'right', paddingRight: '24px' }}>
-                    <button onClick={() => openEditModal(lead)} className="action-icon-btn" title="Edit">
-                      <LuPencil size={14} />
-                    </button>
-                    <button onClick={() => handleDeleteLead(lead._id)} className="action-icon-btn delete" title="Delete">
-                      <LuTrash2 size={14} />
-                    </button>
+              {leads.length === 0 ? (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                    No potential customers found. Click '+ New Customer' above to add your first prospect.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                leads.map((lead) => (
+                  <tr key={lead._id}>
+                    <td style={{ paddingLeft: '24px' }}>
+                      <div className="cell-bold-main">{lead.name}</div>
+                      <div className="cell-sub-muted">{lead.company || 'Direct Contact'}</div>
+                    </td>
+                    <td>
+                      <span className={`status-pill status-${lead.status}`}>
+                        {lead.status}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                        ₹{lead.value?.toLocaleString('en-IN')}
+                      </span>
+                    </td>
+                    <td>{SOURCE_LABELS[lead.source] || lead.source || 'Other'}</td>
+                    <td>{lead.assignedTo?.name || 'Unassigned'}</td>
+                    <td>{formatDateDisplay(lead.followUpDate)}</td>
+                    <td style={{ textAlign: 'right', paddingRight: '24px' }}>
+                      <button onClick={() => openEditModal(lead)} className="action-icon-btn" title="Edit">
+                        <LuPencil size={14} />
+                      </button>
+                      <button onClick={() => handleDeleteLead(lead._id)} className="action-icon-btn delete" title="Delete">
+                        <LuTrash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -479,6 +424,11 @@ const Leads = () => {
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {colLeads.length === 0 && (
+                    <div style={{ padding: '36px 12px', textAlign: 'center', color: '#94a3b8', fontSize: '0.78rem', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #e2e8f0', margin: '6px 0' }}>
+                      No prospects in {stg}
+                    </div>
+                  )}
                   {colLeads.map((item) => (
                     <div key={item._id} className="kanban-card" onClick={() => openEditModal(item)}>
                       <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', marginBottom: '2px' }}>
