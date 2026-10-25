@@ -124,7 +124,7 @@ const Dashboard = () => {
         <StatCard
           title="Sales representatives"
           value={totalUsers}
-          subtext="Across all teams"
+          subtext={user?.role === "admin" ? "Across all teams" : user?.role === "manager" ? "In your team" : "Just you"}
           icon={<LuUsers />}
           color="blue"
         />

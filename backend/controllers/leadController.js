@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Lead = require('../models/Lead');
+const { leadScope, inScope, resolveAssignee } = require('../utils/scope');
 
 // @desc    Get all leads
 // @route   GET /api/leads
@@ -22,11 +23,8 @@ exports.getLeads = async (req, res) => {
       query.status = { $nin: ['won', 'lost'] };
     }
 
-    if (req.user.role === 'bda') {
-      query.assignedTo = req.user._id;
-    } else if (req.user.role === 'manager' && req.user.team) {
-      query.team = req.user.team;
-    }
+    const scope = leadScope(req.user);
+    if (Object.keys(scope).length) query = { $and: [query, scope] };
 
     const leads = await Lead.find(query)
       .populate('assignedTo', 'name avatar email')
@@ -51,10 +49,7 @@ exports.getLead = async (req, res) => {
       .populate('team', 'name');
     if (!lead) return res.status(404).json({ success: false, message: 'Lead not found' });
 
-    if (req.user.role === 'bda' && lead.assignedTo?._id?.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ success: false, message: 'Lead not found' });
-    }
-    if (req.user.role === 'manager' && req.user.team && lead.team?._id?.toString() !== req.user.team.toString()) {
+    if (!inScope(lead, req.user)) {
       return res.status(404).json({ success: false, message: 'Lead not found' });
     }
 
@@ -72,12 +67,9 @@ exports.createLead = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Deal value cannot be negative' });
     }
 
-    if (req.user.role === 'bda') {
-      req.body.assignedTo = req.user._id;
-      if (req.user.team) req.body.team = req.user.team;
-    } else if (!req.body.assignedTo) {
-      req.body.assignedTo = req.user._id;
-    }
+    const resolved = await resolveAssignee(req.user, req.body.assignedTo);
+    req.body.assignedTo = resolved.assignedTo;
+    req.body.team = resolved.team;
     
     // Initialize activity trail
     req.body.activities = [{
@@ -107,10 +99,7 @@ exports.updateLead = async (req, res) => {
     const existingLead = await Lead.findById(req.params.id);
     if (!existingLead) return res.status(404).json({ success: false, message: 'Lead not found' });
 
-    if (req.user.role === 'bda' && existingLead.assignedTo?.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ success: false, message: 'Lead not found' });
-    }
-    if (req.user.role === 'manager' && req.user.team && existingLead.team?.toString() !== req.user.team.toString()) {
+    if (!inScope(existingLead, req.user)) {
       return res.status(404).json({ success: false, message: 'Lead not found' });
     }
 
@@ -118,9 +107,13 @@ exports.updateLead = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Deal value cannot be negative' });
     }
 
+    delete req.body.team;
     if (req.user.role === 'bda') {
       delete req.body.assignedTo;
-      delete req.body.team;
+    } else if (req.body.assignedTo && req.body.assignedTo !== existingLead.assignedTo?.toString()) {
+      const resolved = await resolveAssignee(req.user, req.body.assignedTo);
+      req.body.assignedTo = resolved.assignedTo;
+      req.body.team = resolved.team;
     }
 
     // Strip incoming forged activities
@@ -170,8 +163,9 @@ exports.deleteLead = async (req, res) => {
       return res.status(403).json({ success: false, message: 'BDAs cannot delete leads' });
     }
 
-    const lead = await Lead.findByIdAndDelete(req.params.id);
-    if (!lead) return res.status(404).json({ success: false, message: 'Lead not found' });
+    const existing = await Lead.findById(req.params.id);
+    if (!existing || !inScope(existing, req.user)) return res.status(404).json({ success: false, message: 'Lead not found' });
+    await existing.deleteOne();
     res.json({ success: true, message: 'Lead deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -182,9 +176,7 @@ exports.deleteLead = async (req, res) => {
 // @route   GET /api/leads/follow-ups
 exports.getFollowUps = async (req, res) => {
   try {
-    let query = {};
-    if (req.user.role === 'bda') query.assignedTo = req.user._id;
-    else if (req.user.role === 'manager' && req.user.team) query.team = req.user.team;
+    let query = leadScope(req.user);
 
     const now = new Date();
     const overdueQuery = {
@@ -221,9 +213,7 @@ exports.getFollowUps = async (req, res) => {
 // @route   GET /api/leads/pipeline
 exports.getPipeline = async (req, res) => {
   try {
-    let match = {};
-    if (req.user.role === 'bda') match.assignedTo = req.user._id;
-    else if (req.user.role === 'manager' && req.user.team) match.team = req.user.team;
+    const match = leadScope(req.user);
 
     const stages = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
     const aggregated = await Lead.aggregate([
@@ -252,9 +242,7 @@ exports.getPipeline = async (req, res) => {
 // @route   GET /api/leads/export
 exports.exportLeads = async (req, res) => {
   try {
-    let query = {};
-    if (req.user.role === 'bda') query.assignedTo = req.user._id;
-    else if (req.user.role === 'manager' && req.user.team) query.team = req.user.team;
+    let query = leadScope(req.user);
 
     const leads = await Lead.find(query).populate('assignedTo', 'name email').populate('team', 'name');
 
@@ -296,9 +284,7 @@ exports.exportLeads = async (req, res) => {
 // @route   GET /api/leads/stats
 exports.getLeadStats = async (req, res) => {
   try {
-    let match = {};
-    if (req.user.role === 'bda') match.assignedTo = req.user._id;
-    else if (req.user.role === 'manager' && req.user.team) match.team = req.user.team;
+    const match = leadScope(req.user);
 
     const stats = await Lead.aggregate([
       { $match: match },

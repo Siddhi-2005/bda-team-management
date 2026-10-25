@@ -183,3 +183,60 @@ describe('new features', () => {
     expect(m.status).toBe(200);
   });
 });
+
+
+describe('role scoping & assignment flow', () => {
+  test('manager without a team cannot see other people\'s tasks or leads', async () => {
+    const lone = await User.create({ name: 'Lone', email: 'lone@t.com', password: 'password123', role: 'manager' });
+    const tLone = await tokenFor('lone@t.com');
+    const tasks = await request(app).get('/api/tasks').set(auth(tLone));
+    const leads = await request(app).get('/api/leads').set(auth(tLone));
+    expect(tasks.body.tasks).toHaveLength(0);
+    expect(leads.body.leads).toHaveLength(0);
+    await User.deleteOne({ _id: lone._id });
+  });
+  test('BDA only sees own tasks and sees who assigned them', async () => {
+    await Task.create({ title: 'From mgr', assignedTo: bdaA._id, assignedBy: manager._id, team: teamA._id });
+    const res = await request(app).get('/api/tasks').set(auth(tA));
+    expect(res.body.tasks.every((x) => x.assignedTo._id === bdaA._id.toString())).toBe(true);
+    expect(res.body.tasks.find((x) => x.title === 'From mgr').assignedBy.name).toBe('Mgr');
+  });
+  test('manager can assign inside own team but not to another team', async () => {
+    const ok = await request(app).post('/api/tasks').set(auth(tMgr)).send({ title: 'ok', assignedTo: bdaA._id });
+    expect(ok.status).toBe(201);
+    expect(ok.body.task.team._id).toBe(teamA._id.toString());
+    const bad = await request(app).post('/api/tasks').set(auth(tMgr)).send({ title: 'bad', assignedTo: bdaB._id });
+    expect(bad.status).toBe(400);
+  });
+  test('client-sent team is ignored: team comes from the assignee', async () => {
+    const res = await request(app).post('/api/tasks').set(auth(tA)).send({ title: 'mine', team: teamB._id });
+    expect(res.body.task.team._id).toBe(teamA._id.toString());
+  });
+  test('BDA cannot list other teams; manager sees only own; admin sees all', async () => {
+    const b = await request(app).get('/api/teams').set(auth(tA));
+    expect(b.body.teams.map((x) => x.name)).toEqual(['Team A']);
+    const m = await request(app).get('/api/teams').set(auth(tMgr));
+    expect(m.body.teams.map((x) => x.name)).toEqual(['Team A']);
+    const a = await request(app).get('/api/teams').set(auth(tAdmin));
+    expect(a.body.teams.length).toBeGreaterThanOrEqual(2);
+  });
+  test('new BDA registers unassigned, manager adds them to own team only', async () => {
+    const reg = await request(app).post('/api/auth/register').send({ name: 'New', email: 'new@t.com', password: 'password123' });
+    expect(reg.body.user.role).toBe('bda');
+    expect(reg.body.user.team).toBeUndefined();
+    const newId = reg.body.user._id;
+    const list = await request(app).get('/api/users?role=bda').set(auth(tMgr));
+    expect(list.body.users.some((u) => u._id === newId)).toBe(true);
+    const own = await request(app).put(`/api/teams/${teamA._id}/members`).set(auth(tMgr)).send({ userId: newId });
+    expect(own.status).toBe(200);
+    expect((await User.findById(newId)).team.toString()).toBe(teamA._id.toString());
+    const other = await request(app).put(`/api/teams/${teamB._id}/members`).set(auth(tMgr)).send({ userId: newId });
+    expect(other.status).toBe(403);
+  });
+  test('manager cannot promote a BDA to manager', async () => {
+    await request(app).put(`/api/users/${bdaA._id}`).set(auth(tMgr)).send({ role: 'manager', phone: '123' });
+    const u = await User.findById(bdaA._id);
+    expect(u.role).toBe('bda');
+    expect(u.team.toString()).toBe(teamA._id.toString()); // editing phone must not drop the team
+  });
+});

@@ -22,9 +22,11 @@ const TASK_STATUSES = [
 
 const Tasks = () => {
   const { user } = useAuth();
+  const isBda = user?.role === 'bda';
+  const canAssign = user?.role === 'admin' || user?.role === 'manager';
+  const [error, setError] = useState('');
   const [tasks, setTasks] = useState([]);
   const [associates, setAssociates] = useState([]);
-  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'table'
 
@@ -42,7 +44,6 @@ const Tasks = () => {
     status: 'todo',
     priority: 'medium',
     assignedTo: '',
-    team: '',
     dueDate: ''
   });
 
@@ -54,32 +55,27 @@ const Tasks = () => {
       if (statusFilter) params.append('status', statusFilter);
 
       const res = await api.get(`/tasks?${params.toString()}`);
-      if (res.data?.success) {
-        setTasks(res.data.tasks || []);
-      } else {
-        setTasks([]);
-      }
-    } catch {
+      setError('');
+      setTasks(res.data?.success ? res.data.tasks : []);
+    } catch (err) {
       setTasks([]);
+      setError(err.response?.data?.message || 'Could not load tasks. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const fetchDropdowns = async () => {
+    if (!canAssign) return; // BDAs only ever create/edit their own tasks
     try {
-      const [uRes, tRes] = await Promise.allSettled([
-        api.get('/users?role=bda'),
-        api.get('/teams')
-      ]);
-      if (uRes.status === 'fulfilled' && uRes.value.data.success) {
-        setAssociates(uRes.value.data.users || []);
-      }
-      if (tRes.status === 'fulfilled' && tRes.value.data.success) {
-        setTeams(tRes.value.data.teams || []);
+      const res = await api.get('/users?role=bda&isActive=true');
+      if (res.data?.success) {
+        // Only people who belong to a team can receive tasks
+        const list = res.data.users.filter((u) => u.team);
+        setAssociates(user.role === 'manager' ? list.filter((u) => (u.team?._id || u.team) === (user.team?._id || user.team)) : list);
       }
     } catch {
-      // Clean fallback
+      setAssociates([]);
     }
   };
 
@@ -95,8 +91,7 @@ const Tasks = () => {
       description: '',
       status: 'todo',
       priority: 'medium',
-      assignedTo: user?.role === 'bda' ? user._id : (associates[0]?._id || ''),
-      team: user?.team?._id || user?.team || (teams[0]?._id || ''),
+      assignedTo: '',
       dueDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]
     });
     setModalOpen(true);
@@ -110,7 +105,6 @@ const Tasks = () => {
       status: task.status || 'todo',
       priority: task.priority || 'medium',
       assignedTo: task.assignedTo?._id || task.assignedTo || '',
-      team: task.team?._id || task.team || '',
       dueDate: task.dueDate ? task.dueDate.split('T')[0] : ''
     });
     setModalOpen(true);
@@ -126,18 +120,8 @@ const Tasks = () => {
       }
       setModalOpen(false);
       fetchTasks();
-    } catch {
-      if (editingTask) {
-        setTasks(tasks.map((t) => (t._id === editingTask._id ? { ...t, ...formData } : t)));
-      } else {
-        const newTask = {
-          _id: 'task-local-' + Date.now(),
-          ...formData,
-          assignedTo: { name: 'Ankit Patel' }
-        };
-        setTasks([newTask, ...tasks]);
-      }
-      setModalOpen(false);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not save the task.');
     }
   };
 
@@ -146,8 +130,8 @@ const Tasks = () => {
     try {
       await api.delete(`/tasks/${id}`);
       setTasks(tasks.filter((t) => t._id !== id));
-    } catch {
-      setTasks(tasks.filter((t) => t._id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not delete the task.');
     }
   };
 
@@ -160,8 +144,8 @@ const Tasks = () => {
       try {
         await api.put(`/tasks/${task._id}`, { status: nextStatus });
         setTasks(tasks.map((t) => (t._id === task._id ? { ...t, status: nextStatus } : t)));
-      } catch {
-        setTasks(tasks.map((t) => (t._id === task._id ? { ...t, status: nextStatus } : t)));
+      } catch (err) {
+        alert(err.response?.data?.message || 'Could not update the task.');
       }
     }
   };
@@ -189,7 +173,16 @@ const Tasks = () => {
       <div className="page-title-row">
         <div>
           <h1 className="page-title">Tasks & Activities</h1>
-          <p className="page-subtitle">Track deliverables, client follow-ups, and sales assignments across teams.</p>
+          <p className="page-subtitle">
+            {isBda && 'Tasks assigned to you. The "Assigned by" line shows who gave you each task.'}
+            {user?.role === 'manager' && (user.team ? 'Tasks for your team. Assign work to your team members.' : 'You are not managing a team yet, so you only see tasks you created.')}
+            {user?.role === 'admin' && 'All tasks across every team.'}
+          </p>
+          {isBda && !user.team && (
+            <p style={{ color: '#b45309', fontSize: '0.82rem', marginTop: 6 }}>
+              You are not in a team yet. A manager or admin will add you; until then you only see tasks you create for yourself.
+            </p>
+          )}
         </div>
 
         <button onClick={openAddModal} className="btn-primary-blue">
@@ -197,6 +190,17 @@ const Tasks = () => {
           <span>New Task</span>
         </button>
       </div>
+
+      {error && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 12, fontSize: '0.85rem' }}>
+          {error}
+        </div>
+      )}
+      {!error && !loading && tasks.length === 0 && (
+        <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', color: '#64748b', padding: '14px', borderRadius: 8, marginBottom: 12, fontSize: '0.85rem' }}>
+          No tasks to show for your role yet.
+        </div>
+      )}
 
       {/* Filter Row */}
       <div className="filter-bar-card">
@@ -280,11 +284,6 @@ const Tasks = () => {
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto' }}>
-                  {colTasks.length === 0 && (
-                    <div style={{ padding: '36px 16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.78rem', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #e2e8f0', margin: '8px 0' }}>
-                      No tasks in {st.label}
-                    </div>
-                  )}
                   {colTasks.map((task) => (
                     <div key={task._id} className="kanban-card" onClick={() => openEditModal(task)}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -332,6 +331,9 @@ const Tasks = () => {
                           <span style={{ color: '#475569', fontWeight: 500 }}>
                             {task.assignedTo?.name || 'Unassigned'}
                           </span>
+                          <span style={{ color: '#94a3b8' }}>
+                            · by {task.assignedBy?.name || '—'}
+                          </span>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8' }}>
@@ -356,47 +358,45 @@ const Tasks = () => {
                 <th>Priority</th>
                 <th>Status</th>
                 <th>Assigned To</th>
+                <th>Assigned By</th>
+                <th>Team</th>
                 <th>Due Date</th>
                 <th style={{ textAlign: 'right', paddingRight: '24px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '0.84rem' }}>
-                    No tasks found. Click '+ New Task' above to schedule activities.
+              {filteredTasks.map((task) => (
+                <tr key={task._id}>
+                  <td style={{ paddingLeft: '24px' }}>
+                    <div className="cell-bold-main">{task.title}</div>
+                    <div className="cell-sub-muted">{task.description || 'No description'}</div>
                   </td>
-                </tr>
-              ) : (
-                filteredTasks.map((task) => (
-                  <tr key={task._id}>
-                    <td style={{ paddingLeft: '24px' }}>
-                      <div className="cell-bold-main">{task.title}</div>
-                      <div className="cell-sub-muted">{task.description || 'No description'}</div>
-                    </td>
-                    <td>
-                      <span className={`status-pill priority-${task.priority?.toLowerCase() || 'medium'}`}>
-                        {task.priority || 'Medium'}
-                      </span>
-                    </td>
-                    <td>
-                      <span style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: '0.8rem', color: '#475569' }}>
-                        {task.status}
-                      </span>
-                    </td>
-                    <td>{task.assignedTo?.name || 'Unassigned'}</td>
-                    <td>{formatDate(task.dueDate)}</td>
-                    <td style={{ textAlign: 'right', paddingRight: '24px' }}>
-                      <button onClick={() => openEditModal(task)} className="action-icon-btn" title="Edit">
-                        <LuPencil size={14} />
-                      </button>
+                  <td>
+                    <span className={`status-pill priority-${task.priority?.toLowerCase() || 'medium'}`}>
+                      {task.priority || 'Medium'}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ textTransform: 'capitalize', fontWeight: 600, fontSize: '0.8rem', color: '#475569' }}>
+                      {task.status}
+                    </span>
+                  </td>
+                  <td>{task.assignedTo?.name || 'Unassigned'}</td>
+                  <td>{task.assignedBy?.name || '—'}</td>
+                  <td>{task.team?.name || '—'}</td>
+                  <td>{formatDate(task.dueDate)}</td>
+                  <td style={{ textAlign: 'right', paddingRight: '24px' }}>
+                    <button onClick={() => openEditModal(task)} className="action-icon-btn" title="Edit">
+                      <LuPencil size={14} />
+                    </button>
+                    {canAssign && (
                       <button onClick={() => handleDeleteTask(task._id)} className="action-icon-btn delete" title="Delete">
                         <LuTrash2 size={14} />
                       </button>
-                    </td>
-                  </tr>
-                ))
-              )}
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -467,19 +467,26 @@ const Tasks = () => {
               </div>
 
               <div className="form-grid-2">
-                <div className="form-group">
-                  <label className="form-label">Assigned Representative</label>
-                  <select
-                    value={formData.assignedTo}
-                    onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-                    className="form-select"
-                  >
-                    <option value="">Select Representative</option>
-                    {associates.map((u) => (
-                      <option key={u._id} value={u._id}>{u.name}</option>
-                    ))}
-                  </select>
-                </div>
+                {canAssign ? (
+                  <div className="form-group">
+                    <label className="form-label">Assign To</label>
+                    <select
+                      value={formData.assignedTo}
+                      onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                      className="form-select"
+                    >
+                      <option value="">{user.role === 'manager' ? 'Myself' : 'Select Representative'}</option>
+                      {associates.map((u) => (
+                        <option key={u._id} value={u._id}>{u.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label className="form-label">Assigned To</label>
+                    <input className="form-input" value={`${user?.name} (you)`} disabled />
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label className="form-label">Due Date</label>

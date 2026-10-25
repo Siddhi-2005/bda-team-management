@@ -11,6 +11,7 @@ import {
   LuMapPin
 } from 'react-icons/lu';
 
+
 const Teams = () => {
   const { user } = useAuth();
   const [teams, setTeams] = useState([]);
@@ -32,11 +33,7 @@ const Teams = () => {
     try {
       setLoading(true);
       const res = await api.get('/teams');
-      if (res.data?.success) {
-        setTeams(res.data.teams || []);
-      } else {
-        setTeams([]);
-      }
+      setTeams(res.data?.success ? res.data.teams : []);
     } catch {
       setTeams([]);
     } finally {
@@ -141,93 +138,78 @@ const Teams = () => {
       </div>
 
       {/* Team Cards Grid */}
-      {teams.length === 0 ? (
-        <div className="white-card" style={{ padding: '60px 24px', textAlign: 'center', color: '#64748b' }}>
-          <LuUsers size={36} style={{ color: '#cbd5e1', marginBottom: '12px' }} />
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>No Sales Teams Found</h3>
-          <p style={{ fontSize: '0.85rem', color: '#94a3b8', maxWidth: '380px', margin: '0 auto 20px' }}>
-            Get started by organizing your business development associates into targeted sales teams.
-          </p>
-          <button onClick={openAddModal} className="btn-primary-blue" style={{ margin: '0 auto' }}>
-            <LuPlus size={16} />
-            <span>Create First Team</span>
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '20px' }}>
-          {teams.map((t) => {
-            const targetNum = t.target || 1;
-            const achievedNum = t.achieved || 0;
-            const pct = Math.min(100, Math.round((achievedNum / targetNum) * 100));
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '20px' }}>
+        {teams.map((t) => {
+          const targetNum = t.target || 1;
+          const achievedNum = t.achieved || 0;
+          const pct = Math.min(100, Math.round((achievedNum / targetNum) * 100));
 
-            return (
-              <div key={t._id} className="white-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '2px' }}>
-                        {t.name}
-                      </h3>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#64748b' }}>
-                        <LuMapPin size={13} />
-                        <span>{t.region || 'West'} Market</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <button onClick={() => openEditModal(t)} className="action-icon-btn" title="Edit">
-                        <LuPencil size={14} />
-                      </button>
-                      <button onClick={() => handleDeleteTeam(t._id)} className="action-icon-btn delete" title="Delete">
-                        <LuTrash2 size={14} />
-                      </button>
+          return (
+            <div key={t._id} className="white-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '2px' }}>
+                      {t.name}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#64748b' }}>
+                      <LuMapPin size={13} />
+                      <span>{t.region || 'West'} Market</span>
                     </div>
                   </div>
 
-                  {t.description && (
-                    <p style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.4, margin: '12px 0 16px' }}>
-                      {t.description}
-                    </p>
-                  )}
-
-                  {/* Target Progress Bar */}
-                  <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', marginBottom: '16px', border: '1px solid #f1f5f9' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '6px' }}>
-                      <span style={{ color: '#64748b', fontWeight: 500 }}>Target Achievement</span>
-                      <span style={{ fontWeight: 700, color: '#0f172a' }}>{pct}%</span>
-                    </div>
-                    <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: '#2563eb', borderRadius: '4px' }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginTop: '6px', color: '#64748b' }}>
-                      <span>Achieved: <strong>₹{achievedNum.toLocaleString('en-IN')}</strong></span>
-                      <span>Target: <strong>₹{targetNum.toLocaleString('en-IN')}</strong></span>
-                    </div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button onClick={() => openEditModal(t)} className="action-icon-btn" title="Edit">
+                      <LuPencil size={14} />
+                    </button>
+                    <button onClick={() => handleDeleteTeam(t._id)} className="action-icon-btn delete" title="Delete">
+                      <LuTrash2 size={14} />
+                    </button>
                   </div>
                 </div>
 
-                {/* Footer with Manager & Members */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid #f1f5f9', fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div className="avatar-circle" style={{ width: '28px', height: '28px', fontSize: '0.75rem', background: '#e0e7ff', color: '#3730a3' }}>
-                      {t.manager?.name ? t.manager.name[0] : 'M'}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Manager</div>
-                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{t.manager?.name || 'Unassigned'}</div>
-                    </div>
-                  </div>
+                {t.description && (
+                  <p style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.4, margin: '12px 0 16px' }}>
+                    {t.description}
+                  </p>
+                )}
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748b', fontSize: '0.75rem' }}>
-                    <LuUsers size={15} />
-                    <span>{t.members?.length || 0} members</span>
+                {/* Target Progress Bar */}
+                <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', marginBottom: '16px', border: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '6px' }}>
+                    <span style={{ color: '#64748b', fontWeight: 500 }}>Target Achievement</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{pct}%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: '#2563eb', borderRadius: '4px' }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginTop: '6px', color: '#64748b' }}>
+                    <span>Achieved: <strong>₹{achievedNum.toLocaleString('en-IN')}</strong></span>
+                    <span>Target: <strong>₹{targetNum.toLocaleString('en-IN')}</strong></span>
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+
+              {/* Footer with Manager & Members */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid #f1f5f9', fontSize: '0.8rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="avatar-circle" style={{ width: '28px', height: '28px', fontSize: '0.75rem', background: '#e0e7ff', color: '#3730a3' }}>
+                    {t.manager?.name ? t.manager.name[0] : 'M'}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Manager</div>
+                    <div style={{ fontWeight: 600, color: '#0f172a' }}>{t.manager?.name || 'Unassigned'}</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748b', fontSize: '0.75rem' }}>
+                  <LuUsers size={15} />
+                  <span>{t.members?.length || 2} members</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Add / Edit Team Modal */}

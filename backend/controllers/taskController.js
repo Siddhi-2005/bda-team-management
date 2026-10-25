@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Task = require('../models/Task');
+const { taskScope, inScope, resolveAssignee } = require('../utils/scope');
 
 // @desc    Get all tasks
 // @route   GET /api/tasks
@@ -12,12 +13,9 @@ exports.getTasks = async (req, res) => {
     if (assignedTo) query.assignedTo = assignedTo;
     if (team) query.team = team;
 
-    // Role-based scoping
-    if (req.user.role === 'bda') {
-      query.assignedTo = req.user._id;
-    } else if (req.user.role === 'manager' && req.user.team) {
-      query.team = req.user.team;
-    }
+    // Role-based scoping (cannot be overridden by query params)
+    const scope = taskScope(req.user);
+    query = Object.keys(scope).length ? { $and: [query, scope] } : query;
 
     const tasks = await Task.find(query)
       .populate('assignedTo', 'name avatar email')
@@ -44,10 +42,7 @@ exports.getTask = async (req, res) => {
       .populate('team', 'name');
     if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
 
-    if (req.user.role === 'bda' && task.assignedTo?._id?.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ success: false, message: 'Task not found' });
-    }
-    if (req.user.role === 'manager' && req.user.team && task.team?._id?.toString() !== req.user.team.toString()) {
+    if (!inScope(task, req.user)) {
       return res.status(404).json({ success: false, message: 'Task not found' });
     }
 
@@ -61,11 +56,10 @@ exports.getTask = async (req, res) => {
 // @route   POST /api/tasks
 exports.createTask = async (req, res) => {
   try {
+    const { assignedTo, team } = await resolveAssignee(req.user, req.body.assignedTo);
     req.body.assignedBy = req.user._id;
-    if (req.user.role === 'bda') {
-      req.body.assignedTo = req.user._id;
-      if (req.user.team) req.body.team = req.user.team;
-    }
+    req.body.assignedTo = assignedTo;
+    req.body.team = team;
     const task = await Task.create(req.body);
     const populated = await Task.findById(task._id)
       .populate('assignedTo', 'name avatar')
@@ -88,17 +82,18 @@ exports.updateTask = async (req, res) => {
     const existingTask = await Task.findById(req.params.id);
     if (!existingTask) return res.status(404).json({ success: false, message: 'Task not found' });
 
-    if (req.user.role === 'bda' && existingTask.assignedTo?.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ success: false, message: 'Task not found' });
-    }
-    if (req.user.role === 'manager' && req.user.team && existingTask.team?.toString() !== req.user.team.toString()) {
+    if (!inScope(existingTask, req.user)) {
       return res.status(404).json({ success: false, message: 'Task not found' });
     }
 
+    delete req.body.assignedBy;
+    delete req.body.team;
     if (req.user.role === 'bda') {
       delete req.body.assignedTo;
-      delete req.body.assignedBy;
-      delete req.body.team;
+    } else if (req.body.assignedTo && req.body.assignedTo !== existingTask.assignedTo?.toString()) {
+      const resolved = await resolveAssignee(req.user, req.body.assignedTo);
+      req.body.assignedTo = resolved.assignedTo;
+      req.body.team = resolved.team;
     }
     if (req.body.status === 'done') req.body.completedAt = new Date();
     const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
@@ -124,8 +119,9 @@ exports.deleteTask = async (req, res) => {
       return res.status(403).json({ success: false, message: 'BDAs cannot delete tasks' });
     }
 
-    const task = await Task.findByIdAndDelete(req.params.id);
-    if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
+    const existing = await Task.findById(req.params.id);
+    if (!existing || !inScope(existing, req.user)) return res.status(404).json({ success: false, message: 'Task not found' });
+    const task = await existing.deleteOne();
     res.json({ success: true, message: 'Task deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
