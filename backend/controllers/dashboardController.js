@@ -97,10 +97,23 @@ exports.getDashboardStats = async (req, res) => {
       { $project: { name: '$user.name', avatar: '$user.avatar', wonDeals: 1, revenue: 1 } }
     ]);
 
-    // Team performance
+    // Team performance: dynamically compute achieved from won leads
     let teamPerformance = await Team.find(teamQuery)
       .select('name target achieved')
       .lean();
+
+    if (teamPerformance.length > 0) {
+      const teamIds = teamPerformance.map((t) => t._id);
+      const wonAgg = await Lead.aggregate([
+        { $match: { team: { $in: teamIds }, status: 'won' } },
+        { $group: { _id: '$team', totalAchieved: { $sum: '$value' } } }
+      ]);
+      const wonMap = new Map(wonAgg.map((w) => [String(w._id), w.totalAchieved]));
+      teamPerformance = teamPerformance.map((t) => ({
+        ...t,
+        achieved: wonMap.get(String(t._id)) || 0
+      }));
+    }
 
     if (teamPerformance.length === 0 && req.user.role !== 'admin') {
       teamPerformance = [{

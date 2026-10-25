@@ -1,5 +1,6 @@
 const Team = require('../models/Team');
 const User = require('../models/User');
+const Lead = require('../models/Lead');
 
 // Admin: all teams. Manager: teams they manage (+ their own). BDA: only their own team.
 const teamScope = (user) => {
@@ -25,7 +26,21 @@ exports.getTeams = async (req, res) => {
     const teams = await Team.find(teamScope(req.user))
       .populate('manager', 'name email avatar')
       .populate('members', 'name email avatar role')
-      .sort('-createdAt');
+      .sort('-createdAt')
+      .lean();
+
+    if (teams.length > 0) {
+      const teamIds = teams.map((t) => t._id);
+      const wonAgg = await Lead.aggregate([
+        { $match: { team: { $in: teamIds }, status: 'won' } },
+        { $group: { _id: '$team', totalAchieved: { $sum: '$value' } } }
+      ]);
+      const wonMap = new Map(wonAgg.map((w) => [String(w._id), w.totalAchieved]));
+      teams.forEach((t) => {
+        t.achieved = wonMap.get(String(t._id)) || 0;
+      });
+    }
+
     res.json({ success: true, count: teams.length, teams });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -38,8 +53,16 @@ exports.getTeam = async (req, res) => {
   try {
     const team = await Team.findOne({ $and: [{ _id: req.params.id }, teamScope(req.user)] })
       .populate('manager', 'name email avatar')
-      .populate('members', 'name email avatar role');
+      .populate('members', 'name email avatar role')
+      .lean();
     if (!team) return res.status(404).json({ success: false, message: 'Team not found' });
+
+    const wonAgg = await Lead.aggregate([
+      { $match: { team: team._id, status: 'won' } },
+      { $group: { _id: null, totalAchieved: { $sum: '$value' } } }
+    ]);
+    team.achieved = wonAgg.length > 0 ? wonAgg[0].totalAchieved : 0;
+
     res.json({ success: true, team });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
