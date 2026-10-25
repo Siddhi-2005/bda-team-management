@@ -207,7 +207,7 @@ const Login = () => {
           Log in to manage your teams, customers and tasks.
         </p>
 
-        {/* Demo Roles Container */}
+        {/* Demo Roles Container (Evaluator Sandbox) */}
         <div style={{
           background: '#f8fafc',
           border: '1px solid #e2e8f0',
@@ -215,10 +215,28 @@ const Login = () => {
           padding: '16px',
           marginBottom: '28px'
         }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '10px' }}>
-            Portfolio demo: pick a role to fill in its login.
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{
+                background: '#eff6ff',
+                color: '#2563eb',
+                border: '1px solid #bfdbfe',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em'
+              }}>
+                Sandbox Mode
+              </span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#334155' }}>
+                Test drive with a pre-configured role:
+              </span>
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             {DEMO_ROLES.map((item) => {
               const Icon = item.icon;
               const isSelected = activeRole === item.role;
@@ -229,24 +247,39 @@ const Login = () => {
                   onClick={() => handleSelectRole(item)}
                   style={{
                     background: isSelected ? '#eff6ff' : '#ffffff',
-                    border: `1px solid ${isSelected ? '#2563eb' : '#e2e8f0'}`,
+                    border: `1.5px solid ${isSelected ? '#2563eb' : '#e2e8f0'}`,
                     borderRadius: '8px',
-                    padding: '12px',
+                    padding: '10px',
                     textAlign: 'left',
                     cursor: 'pointer',
+                    boxShadow: isSelected ? '0 0 0 3px rgba(37,99,235,0.12)' : 'none',
                     transition: 'all 0.15s ease'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <Icon size={16} style={{ color: '#2563eb' }} />
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>{item.role}</span>
+                    <Icon size={15} style={{ color: '#2563eb' }} />
+                    <span style={{ fontWeight: 700, fontSize: '0.82rem', color: '#0f172a' }}>{item.role}</span>
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: '0.68rem', color: '#64748b', lineHeight: 1.3 }}>
                     {item.desc}
                   </div>
                 </button>
               );
             })}
+          </div>
+
+          <div style={{
+            fontSize: '0.68rem',
+            color: '#94a3b8',
+            marginTop: '10px',
+            borderTop: '1px dashed #e2e8f0',
+            paddingTop: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <LuShield size={12} style={{ color: '#64748b', flexShrink: 0 }} />
+            <span>Isolated sample sandbox for reviewer evaluation. Production instances enforce corporate single-sign-on.</span>
           </div>
         </div>
 
