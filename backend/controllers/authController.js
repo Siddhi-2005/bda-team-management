@@ -1,91 +1,8 @@
 const User = require('../models/User');
-const Team = require('../models/Team');
-const Task = require('../models/Task');
-const Lead = require('../models/Lead');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
-};
-
-const clampNumber = (value, min, max) => {
-  const number = Number(value) || 0;
-  return Math.min(Math.max(number, min), max);
-};
-
-const createOnboardingData = async (user, data) => {
-  const salesTarget = clampNumber(data.salesTarget, 0, 100000000);
-  const activeTaskCount = clampNumber(data.activeTaskCount, 0, 20);
-  const openLeadCount = clampNumber(data.openLeadCount, 0, 50);
-  const pipelineValue = clampNumber(data.pipelineValue, 0, 100000000);
-  const wonRevenue = clampNumber(data.wonRevenue, 0, 100000000);
-  const region = data.region || 'North';
-  const teamNameBase = data.teamName || `${user.name} Sales Workspace`;
-  const teamName = `${teamNameBase} - ${user._id.toString().slice(-5)}`;
-
-  const team = await Team.create({
-    name: teamName,
-    description: `Onboarding workspace for ${user.name}`,
-    manager: user._id,
-    members: [user._id],
-    target: salesTarget,
-    achieved: wonRevenue,
-    region
-  });
-
-  user.team = team._id;
-  await user.save();
-
-  const taskStatuses = ['todo', 'inprogress', 'review'];
-  const tasks = Array.from({ length: activeTaskCount }, (_, index) => ({
-    title: `Onboarding follow-up ${index + 1}`,
-    description: 'Starter task created from registration setup. Update it with the real customer action.',
-    status: taskStatuses[index % taskStatuses.length],
-    priority: index === 0 ? 'high' : 'medium',
-    assignedTo: user._id,
-    assignedBy: user._id,
-    team: team._id,
-    dueDate: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
-    tags: ['onboarding']
-  }));
-
-  if (tasks.length > 0) {
-    await Task.insertMany(tasks);
-  }
-
-  const openLeadValue = openLeadCount > 0 ? Math.round(pipelineValue / openLeadCount) : 0;
-  const leadStatuses = ['new', 'contacted', 'qualified', 'proposal'];
-  const leads = Array.from({ length: openLeadCount }, (_, index) => ({
-    name: `Starter Lead ${index + 1}`,
-    company: data.department || 'New Prospect',
-    status: leadStatuses[index % leadStatuses.length],
-    source: 'other',
-    value: openLeadValue,
-    assignedTo: user._id,
-    team: team._id,
-    notes: 'Starter lead created from registration setup. Replace with the actual prospect details.',
-    followUpDate: new Date(Date.now() + (index + 2) * 24 * 60 * 60 * 1000),
-    tags: ['onboarding']
-  }));
-
-  if (wonRevenue > 0) {
-    leads.push({
-      name: 'Existing Won Business',
-      company: data.department || 'Existing Account',
-      status: 'won',
-      source: 'other',
-      value: wonRevenue,
-      assignedTo: user._id,
-      team: team._id,
-      notes: 'Initial closed revenue entered during registration setup.',
-      closedDate: new Date(),
-      tags: ['onboarding']
-    });
-  }
-
-  if (leads.length > 0) {
-    await Lead.insertMany(leads);
-  }
 };
 
 // @desc    Register user
@@ -99,12 +16,7 @@ exports.register = async (req, res) => {
       phone,
       department,
       region,
-      salesTarget,
-      teamName,
-      activeTaskCount,
-      openLeadCount,
-      pipelineValue,
-      wonRevenue
+      salesTarget
     } = req.body;
 
     if (!password || typeof password !== 'string' || password.length < 6) {
@@ -116,7 +28,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
 
-    // Public register creates a clean BDA user without fake teams or targets
+    // Public register creates a clean BDA user with no team
     const user = await User.create({
       name,
       email,
@@ -127,20 +39,6 @@ exports.register = async (req, res) => {
       region: region || 'North',
       salesTarget: Number(salesTarget) || 0
     });
-
-    // Only create onboarding sample data if explicitly requested (e.g. during guided demo onboarding)
-    if (activeTaskCount > 0 || openLeadCount > 0 || wonRevenue > 0) {
-      await createOnboardingData(user, {
-        department,
-        region,
-        salesTarget: user.salesTarget,
-        teamName,
-        activeTaskCount,
-        openLeadCount,
-        pipelineValue,
-        wonRevenue
-      });
-    }
 
     const token = generateToken(user._id);
     res.status(201).json({
