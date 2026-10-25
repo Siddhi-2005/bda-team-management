@@ -264,6 +264,11 @@ const Leads = () => {
         <div>
           <h1 className="page-title">Potential Customers</h1>
           <p className="page-subtitle">Register qualified prospects, set deal values, and convert accounts.</p>
+          {user?.role === 'bda' && !user?.team && (
+            <p style={{ color: '#b45309', fontSize: '0.82rem', marginTop: 6 }}>
+              You are not in a team yet. A manager or admin will add you; until then you only see leads assigned directly to you.
+            </p>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>

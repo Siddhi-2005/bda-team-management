@@ -85,6 +85,11 @@ const Dashboard = () => {
           <div className="greeting-date-text">{getFormattedDate()}</div>
           <h1 className="greeting-heading">{getGreeting()}, {firstName}</h1>
           <p className="greeting-subtext">Here is where your pipeline and team stand right now.</p>
+          {user?.role === 'bda' && !user?.team && (
+            <p style={{ color: '#b45309', fontSize: '0.82rem', marginTop: 6 }}>
+              You are not in a team yet. A manager or admin will add you; until then you only see tasks and leads assigned directly to you.
+            </p>
+          )}
         </div>
         <div className="greeting-actions-row">
           <Link to="/tasks" className="btn-hero-outlined">
