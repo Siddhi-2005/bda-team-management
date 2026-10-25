@@ -2,20 +2,21 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
-  RiDashboardLine,
-  RiTeamLine,
-  RiUserLine,
-  RiTaskLine,
-  RiLineChartLine,
-  RiSettings3Line,
-  RiLogoutBoxRLine
-} from 'react-icons/ri';
+  LuLayoutDashboard,
+  LuUsers,
+  LuSquareCheck,
+  LuSettings,
+  LuLogOut,
+  LuTrendingUp,
+  LuChevronsUpDown,
+  LuUserCheck
+} from 'react-icons/lu';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { user, logout } = useAuth();
 
   const getInitials = (name) => {
-    if (!name) return 'U';
+    if (!name) return 'SP';
     return name
       .split(' ')
       .map((n) => n[0])
@@ -24,39 +25,77 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       .toUpperCase();
   };
 
-  const navLinks = [
-    { to: '/dashboard', label: 'Dashboard', icon: <RiDashboardLine /> },
-    { to: '/teams', label: 'Teams', icon: <RiTeamLine />, roles: ['admin', 'manager'] },
-    { to: '/members', label: 'Members', icon: <RiUserLine />, roles: ['admin', 'manager'] },
-    { to: '/tasks', label: 'Tasks', icon: <RiTaskLine /> },
-    { to: '/leads', label: 'Potential Customers', icon: <RiLineChartLine /> },
-    { to: '/profile', label: 'Profile', icon: <RiSettings3Line /> }
+  const workspaceLinks = [
+    { to: '/dashboard', label: 'Dashboard', icon: <LuLayoutDashboard size={18} /> },
+    { to: '/leads', label: 'Potential Customers', icon: <LuUsers size={18} /> },
+    { to: '/tasks', label: 'Tasks', icon: <LuSquareCheck size={18} /> }
   ];
 
-  const filteredLinks = navLinks.filter(
-    (link) => !link.roles || link.roles.includes(user?.role)
-  );
+  const teamLinks = [
+    { to: '/teams', label: 'Teams', icon: <LuUsers size={18} />, roles: ['admin', 'manager'] },
+    { to: '/members', label: 'Members', icon: <LuUserCheck size={18} />, roles: ['admin', 'manager'] }
+  ];
+
+  const accountLinks = [
+    { to: '/profile', label: 'Profile & settings', icon: <LuSettings size={18} /> }
+  ];
+
+  const filterRole = (links) => links.filter((l) => !l.roles || l.roles.includes(user?.role));
 
   return (
-    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-      <div>
-        <div className="sidebar-logo">
-          <RiLineChartLine style={{ color: 'var(--accent-secondary)' }} />
-          <span>Business Development Platform</span>
+    <aside className="app-sidebar">
+      {/* Brand Header */}
+      <div className="sidebar-brand">
+        <div className="brand-icon-box">
+          <LuTrendingUp />
         </div>
+        <div className="brand-text-col">
+          <span className="brand-title">BDA Workspace</span>
+          <span className="brand-sub">Sales team platform</span>
+        </div>
+      </div>
 
-        <nav>
-          <ul className="sidebar-menu">
-            {filteredLinks.map((link) => (
-              <li key={link.to}>
+      {/* Live Status Pill */}
+      <div className="sidebar-status-pill">
+        <div className="status-indicator">
+          <span className="pulsing-dot" />
+          <span>Pipeline live</span>
+        </div>
+        <LuChevronsUpDown size={14} style={{ color: '#94a3b8' }} />
+      </div>
+
+      {/* Section: Workspace */}
+      <div className="nav-section-title">Workspace</div>
+      <ul className="sidebar-nav-list">
+        {filterRole(workspaceLinks).map((link) => (
+          <li key={link.to} className="sidebar-nav-item">
+            <NavLink
+              to={link.to}
+              className={({ isActive }) => (isActive ? 'active' : '')}
+              onClick={() => {
+                if (window.innerWidth <= 768 && toggleSidebar) toggleSidebar();
+              }}
+            >
+              {link.icon}
+              <span>{link.label}</span>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+
+      {/* Section: Team */}
+      {filterRole(teamLinks).length > 0 && (
+        <>
+          <div className="nav-section-title">Team</div>
+          <ul className="sidebar-nav-list">
+            {filterRole(teamLinks).map((link) => (
+              <li key={link.to} className="sidebar-nav-item">
                 <NavLink
                   to={link.to}
+                  className={({ isActive }) => (isActive ? 'active' : '')}
                   onClick={() => {
-                    if (window.innerWidth <= 768) toggleSidebar();
+                    if (window.innerWidth <= 768 && toggleSidebar) toggleSidebar();
                   }}
-                  className={({ isActive }) =>
-                    `sidebar-link ${isActive ? 'active' : ''}`
-                  }
                 >
                   {link.icon}
                   <span>{link.label}</span>
@@ -64,27 +103,43 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               </li>
             ))}
           </ul>
-        </nav>
-      </div>
+        </>
+      )}
 
-      <div className="sidebar-footer">
-        <div className="sidebar-user">
-          {user?.avatar ? (
-            <img src={user.avatar} className="sidebar-avatar" alt={user.name} />
-          ) : (
-            <div className="sidebar-avatar">{getInitials(user?.name)}</div>
-          )}
-          <div className="sidebar-user-info">
-            <h4>{user?.name || 'Associate'}</h4>
-            <span className="badge badge-primary" style={{ padding: '2px 8px', fontSize: '0.65rem', marginTop: '4px' }}>
-              {user?.role}
-            </span>
+      {/* Section: Account */}
+      <div className="nav-section-title">Account</div>
+      <ul className="sidebar-nav-list">
+        {accountLinks.map((link) => (
+          <li key={link.to} className="sidebar-nav-item">
+            <NavLink
+              to={link.to}
+              className={({ isActive }) => (isActive ? 'active' : '')}
+              onClick={() => {
+                if (window.innerWidth <= 768 && toggleSidebar) toggleSidebar();
+              }}
+            >
+              {link.icon}
+              <span>{link.label}</span>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+
+      {/* User Footer */}
+      <div className="sidebar-user-footer">
+        <div className="user-badge-row">
+          <div className="avatar-circle">
+            {getInitials(user?.name)}
+          </div>
+          <div className="user-badge-info">
+            <span className="user-badge-name">{user?.name || 'Siddhi Pawar'}</span>
+            <span className="user-badge-role">{user?.role || 'Admin'}</span>
           </div>
         </div>
 
-        <button onClick={logout} className="btn-logout">
-          <RiLogoutBoxRLine />
-          <span>Logout</span>
+        <button onClick={logout} className="btn-sidebar-logout" title="Log out">
+          <LuLogOut size={16} />
+          <span>Log out</span>
         </button>
       </div>
     </aside>

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/layout/Layout';
+import LandingPage from './pages/public/LandingPage';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
@@ -11,17 +12,33 @@ import Tasks from './pages/Tasks';
 import Leads from './pages/Leads';
 import Profile from './pages/Profile';
 import ContactPage from './pages/public/ContactPage';
-import { RiLoader4Line } from 'react-icons/ri';
 
-// PrivateRoute wrapper for protected access
+// PrivateRoute wrapper for protected workspace access
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', width: '100vw', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0a0a12', flexDirection: 'column', gap: '15px' }}>
-        <RiLoader4Line className="spin" style={{ fontSize: '3rem', color: 'var(--accent-primary)' }} />
-        <p style={{ color: 'var(--text-secondary)' }}>Verifying credentials session...</p>
+      <div style={{
+        display: 'flex',
+        width: '100vw',
+        height: '100vh',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f8fafc',
+        flexDirection: 'column',
+        gap: '12px'
+      }}>
+        <div className="spin" style={{
+          width: '36px',
+          height: '36px',
+          border: '3px solid #e2e8f0',
+          borderTopColor: '#2563eb',
+          borderRadius: '50%'
+        }} />
+        <p style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 500 }}>
+          Loading workspace...
+        </p>
       </div>
     );
   }
@@ -34,35 +51,31 @@ const App = () => {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public Auth Routes */}
+          {/* Public Website & Auth Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
-          {/* Public Website Routes */}
           <Route path="/contact" element={<ContactPage />} />
 
           {/* Protected MERN System Workspace */}
           <Route
-            path="/"
             element={
               <PrivateRoute>
                 <Layout />
               </PrivateRoute>
             }
           >
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            
-            {/* CRUD Modules */}
-            <Route path="teams" element={<Teams />} />
-            <Route path="members" element={<Members />} />
-            <Route path="tasks" element={<Tasks />} />
-            <Route path="leads" element={<Leads />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/leads" element={<Leads />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="/members" element={<Members />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

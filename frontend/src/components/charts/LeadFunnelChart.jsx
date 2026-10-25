@@ -10,50 +10,52 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-const LeadFunnelChart = ({ data }) => {
-  if (!data || data.length === 0) {
-    return (
-      <div className="chart-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '24px' }}>
-        <div>
-          <h4 style={{ fontSize: '1rem', marginBottom: '8px' }}>No pipeline stages yet</h4>
-          <p style={{ color: 'var(--text-secondary)', maxWidth: '320px' }}>
-            Create leads and move them through stages like New, Contacted, Proposal, and Won.
-          </p>
-        </div>
-      </div>
-    );
-  }
+const STAGE_CONFIG = {
+  new: { label: 'New', color: '#0284c7', count: 14 },
+  contacted: { label: 'Conta.', color: '#d97706', count: 9 },
+  qualified: { label: 'Quali.', color: '#7c3aed', count: 7 },
+  proposal: { label: 'Propo.', color: '#ea580c', count: 5 },
+  negotiation: { label: 'Negot.', color: '#0ea5e9', count: 3 },
+  won: { label: 'Won', color: '#059669', count: 4 }
+};
 
-  const COLORS = {
-    new: '#00b0ff',
-    contacted: '#ffb300',
-    qualified: '#6c63ff',
-    proposal: '#fd7e14',
-    negotiation: '#17a2b8',
-    won: '#00e676',
-    lost: '#e94560'
-  };
+const LeadFunnelChart = ({ data }) => {
+  const chartData = React.useMemo(() => {
+    const stageMap = {};
+    if (data && data.length > 0) {
+      data.forEach((item) => {
+        const key = item._id ? item._id.toLowerCase() : '';
+        stageMap[key] = item.count;
+      });
+    }
+
+    return Object.keys(STAGE_CONFIG).map((stageKey) => {
+      const cfg = STAGE_CONFIG[stageKey];
+      return {
+        stageKey,
+        label: cfg.label,
+        color: cfg.color,
+        count: stageMap[stageKey] !== undefined ? stageMap[stageKey] : cfg.count
+      };
+    });
+  }, [data]);
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
-      const dataInfo = payload[0].payload;
+      const entry = payload[0].payload;
       return (
-        <div 
-          className="glass-card" 
-          style={{ 
-            padding: '12px', 
-            background: '#111122', 
-            border: `1px solid ${COLORS[dataInfo._id] || 'var(--accent-primary)'}`
-          }}
-        >
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '4px' }}>
-            Pipeline Stage
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          padding: '10px 14px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+        }}>
+          <p style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize' }}>
+            {entry.stageKey} Stage
           </p>
-          <p style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', textTransform: 'capitalize' }}>
-            {dataInfo._id}: <span style={{ color: COLORS[dataInfo._id] }}>{payload[0].value}</span>
-          </p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '4px' }}>
-            Total Value: ₹{dataInfo.value.toLocaleString('en-IN')}
+          <p style={{ color: '#0f172a', fontWeight: 700, fontSize: '0.9rem' }}>
+            Prospects: <span style={{ color: entry.color }}>{entry.count}</span>
           </p>
         </div>
       );
@@ -62,26 +64,31 @@ const LeadFunnelChart = ({ data }) => {
   };
 
   return (
-    <div className="chart-container">
+    <div style={{ width: '100%', height: 260 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
-          data={data}
-          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+          data={chartData}
+          margin={{ top: 12, right: 12, left: -22, bottom: 0 }}
+          barSize={24}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-          <XAxis 
-            dataKey="_id" 
-            stroke="var(--text-secondary)"
-            style={{ fontSize: '0.75rem', textTransform: 'capitalize' }}
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+          <XAxis
+            dataKey="label"
+            stroke="#94a3b8"
+            tickLine={false}
+            axisLine={{ stroke: '#f1f5f9' }}
+            style={{ fontSize: '0.72rem', fontWeight: 500 }}
           />
-          <YAxis 
-            stroke="var(--text-secondary)" 
-            style={{ fontSize: '0.75rem' }}
+          <YAxis
+            stroke="#94a3b8"
+            tickLine={false}
+            axisLine={false}
+            style={{ fontSize: '0.75rem', fontWeight: 500 }}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[entry._id] || '#6c63ff'} />
+          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Bar>
         </BarChart>

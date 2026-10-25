@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Task = require('../models/Task');
 
 // @desc    Get all tasks
@@ -11,11 +12,15 @@ exports.getTasks = async (req, res) => {
     if (assignedTo) query.assignedTo = assignedTo;
     if (team) query.team = team;
 
-    // BDA users can only see their own tasks
-    if (req.user.role === 'bda') query.assignedTo = req.user._id;
+    // Role-based scoping
+    if (req.user.role === 'bda') {
+      query.assignedTo = req.user._id;
+    } else if (req.user.role === 'manager' && req.user.team) {
+      query.team = req.user.team;
+    }
 
     const tasks = await Task.find(query)
-      .populate('assignedTo', 'name avatar')
+      .populate('assignedTo', 'name avatar email')
       .populate('assignedBy', 'name avatar')
       .populate('team', 'name')
       .sort('-createdAt');
@@ -29,11 +34,23 @@ exports.getTasks = async (req, res) => {
 // @route   GET /api/tasks/:id
 exports.getTask = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
     const task = await Task.findById(req.params.id)
       .populate('assignedTo', 'name avatar email')
       .populate('assignedBy', 'name avatar')
       .populate('team', 'name');
     if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
+
+    if (req.user.role === 'bda' && task.assignedTo?._id?.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+    if (req.user.role === 'manager' && req.user.team && task.team?._id?.toString() !== req.user.team.toString()) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
     res.json({ success: true, task });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -64,11 +81,20 @@ exports.createTask = async (req, res) => {
 // @route   PUT /api/tasks/:id
 exports.updateTask = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
     const existingTask = await Task.findById(req.params.id);
     if (!existingTask) return res.status(404).json({ success: false, message: 'Task not found' });
+
     if (req.user.role === 'bda' && existingTask.assignedTo?.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'You can only update your own tasks' });
+      return res.status(404).json({ success: false, message: 'Task not found' });
     }
+    if (req.user.role === 'manager' && req.user.team && existingTask.team?.toString() !== req.user.team.toString()) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
     if (req.user.role === 'bda') {
       delete req.body.assignedTo;
       delete req.body.assignedBy;
@@ -90,6 +116,14 @@ exports.updateTask = async (req, res) => {
 // @route   DELETE /api/tasks/:id
 exports.deleteTask = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
+    if (req.user.role === 'bda') {
+      return res.status(403).json({ success: false, message: 'BDAs cannot delete tasks' });
+    }
+
     const task = await Task.findByIdAndDelete(req.params.id);
     if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
     res.json({ success: true, message: 'Task deleted' });

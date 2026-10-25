@@ -96,7 +96,6 @@ exports.register = async (req, res) => {
       name,
       email,
       password,
-      role,
       phone,
       department,
       region,
@@ -107,15 +106,22 @@ exports.register = async (req, res) => {
       pipelineValue,
       wonRevenue
     } = req.body;
+
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
+    }
+
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
+
+    // Public register can never create an admin or manager
     const user = await User.create({
       name,
       email,
       password,
-      role: role || 'bda',
+      role: 'bda',
       phone,
       department,
       region,
@@ -162,8 +168,8 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ success: false, message: 'Please provide valid email and password strings' });
     }
     const user = await User.findOne({ email }).select('+password');
     if (!user || !(await user.matchPassword(password))) {

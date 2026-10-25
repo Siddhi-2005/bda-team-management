@@ -1,1 +1,15 @@
-/* Reset default App.css styles to ensure our index.css design system governs the entire page layout. */
+/* Supplementary app utility styles */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
