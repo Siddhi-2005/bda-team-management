@@ -12,7 +12,6 @@ import {
   LuUser
 } from 'react-icons/lu';
 
-
 const Members = () => {
   const { user } = useAuth();
   const [members, setMembers] = useState([]);
@@ -23,6 +22,7 @@ const Members = () => {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [teamFilter, setTeamFilter] = useState('');
 
   // Modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -69,6 +69,20 @@ const Members = () => {
     fetchMembers();
     fetchTeams();
   }, [roleFilter, statusFilter]);
+
+  const myTeam = teams.find(
+    (t) => (t.manager?._id || t.manager) === user?._id || (t._id === (user?.team?._id || user?.team))
+  );
+
+  const handleAddToTeam = async (teamId, userId) => {
+    try {
+      await api.put(`/teams/${teamId}/members`, { userId });
+      fetchMembers();
+      fetchTeams();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add member to team');
+    }
+  };
 
   const openAddModal = () => {
     setEditingMember(null);
@@ -117,18 +131,8 @@ const Members = () => {
       }
       setModalOpen(false);
       fetchMembers();
-    } catch {
-      if (editingMember) {
-        setMembers(members.map((m) => (m._id === editingMember._id ? { ...m, ...formData } : m)));
-      } else {
-        const newM = {
-          _id: 'mem-local-' + Date.now(),
-          ...formData,
-          team: { name: 'Western Wolves' }
-        };
-        setMembers([...members, newM]);
-      }
-      setModalOpen(false);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to save member.');
     }
   };
 
@@ -136,16 +140,24 @@ const Members = () => {
     if (!window.confirm('Delete this team member account?')) return;
     try {
       await api.delete(`/users/${id}`);
-      setMembers(members.filter((m) => m._id !== id));
-    } catch {
-      setMembers(members.filter((m) => m._id !== id));
+      fetchMembers();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete member.');
     }
   };
 
   const filteredMembers = members.filter((m) => {
     if (search) {
       const q = search.toLowerCase();
-      return m.name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q);
+      if (!m.name?.toLowerCase().includes(q) && !m.email?.toLowerCase().includes(q)) {
+        return false;
+      }
+    }
+    if (teamFilter === 'unassigned') {
+      if (m.team) return false;
+    } else if (teamFilter) {
+      const mTeamId = m.team?._id || m.team;
+      if (mTeamId !== teamFilter) return false;
     }
     return true;
   });
@@ -209,6 +221,18 @@ const Members = () => {
           <option value="true">Active Only</option>
           <option value="false">Inactive</option>
         </select>
+
+        <select
+          value={teamFilter}
+          onChange={(e) => setTeamFilter(e.target.value)}
+          className="filter-select"
+        >
+          <option value="">All Teams</option>
+          <option value="unassigned">Unassigned</option>
+          {teams.map((t) => (
+            <option key={t._id} value={t._id}>{t.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Members Table */}
@@ -240,7 +264,35 @@ const Members = () => {
                   </div>
                 </td>
                 <td>{getRoleBadge(m.role)}</td>
-                <td>{m.team?.name || 'Unassigned'}</td>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span>{m.team?.name || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Unassigned</span>}</span>
+                    {!m.team && user?.role === 'manager' && myTeam && m.role !== 'admin' && (
+                      <button
+                        onClick={() => handleAddToTeam(myTeam._id, m._id)}
+                        className="btn-primary-blue"
+                        style={{ padding: '3px 8px', fontSize: '0.72rem', borderRadius: '6px' }}
+                      >
+                        Add to team
+                      </button>
+                    )}
+                    {!m.team && user?.role === 'admin' && teams.length > 0 && (
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) handleAddToTeam(e.target.value, m._id);
+                        }}
+                        defaultValue=""
+                        className="filter-select"
+                        style={{ padding: '2px 6px', fontSize: '0.72rem', height: 'auto' }}
+                      >
+                        <option value="" disabled>Add to team...</option>
+                        {teams.map((t) => (
+                          <option key={t._id} value={t._id}>{t.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </td>
                 <td>{m.phone || '—'}</td>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
